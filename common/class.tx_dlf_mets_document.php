@@ -387,72 +387,11 @@ final class tx_dlf_mets_document extends tx_dlf_document {
         // Sanitize input.
         $pid = max(intval($pid), 0);
 
-        if (!$forceReload) {
-
-            $regObj = md5($uid);
-
-            if (is_object(self::$registry[$regObj]) && self::$registry[$regObj] instanceof self) {
-
-                // Check if instance has given PID.
-                if (!$pid || !self::$registry[$regObj]->pid || $pid == self::$registry[$regObj]->pid) {
-
-                    // Return singleton instance if available.
-                    return self::$registry[$regObj];
-
-                }
-
-            } else {
-
-                // Check the user's session...
-                $sessionData = tx_dlf_helper::loadFromSession(get_called_class());
-
-                if (is_object($sessionData[$regObj]) && $sessionData[$regObj] instanceof self) {
-
-                    // Check if instance has given PID.
-                    if (!$pid || !$sessionData[$regObj]->pid || $pid == $sessionData[$regObj]->pid) {
-
-                        // ...and restore registry.
-                        self::$registry[$regObj] = $sessionData[$regObj];
-
-                        return self::$registry[$regObj];
-
-                    }
-
-                }
-
-            }
-
-        }
-
         // Create new instance...
         $instance = new self($uid, $pid);
 
-        // ...and save it to registry.
-        if ($instance->ready) {
-
-            self::$registry[md5($instance->uid)] = $instance;
-
-            if ($instance->uid != $instance->location) {
-
-                self::$registry[md5($instance->location)] = $instance;
-
-            }
-
-            // Load extension configuration
-            $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['dlf']);
-
-            // Save registry to session if caching is enabled.
-            if (!empty($extConf['caching'])) {
-
-                tx_dlf_helper::saveToSession(self::$registry, get_class($instance));
-
-            }
-
-        }
-
         // Return new instance.
         return $instance;
-
     }
 
     /**

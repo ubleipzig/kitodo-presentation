@@ -1,4 +1,7 @@
 <?php
+use iiif\model\helper\IiifReader;
+use iiif\model\resources\AbstractIiifResource;
+
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -274,6 +277,52 @@ abstract class tx_dlf_document {
      */
     public abstract function getFileMimeType($id);
     
+    protected static function getDocumentFormat($uid, $pid = 0)
+    {
+        if (\TYPO3\CMS\Core\Utility\MathUtility::canBeInterpretedAsInteger($uid)) {
+            
+            $whereClause = 'tx_dlf_documents.uid='.intval($uid).tx_dlf_helper::whereClause('tx_dlf_documents');
+            if ($pid) {
+                
+                $whereClause .= ' AND tx_dlf_documents.pid='.intval($pid);
+                
+            }
+            $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
+                'tx_dlf_documents.uid AS uid,tx_dlf_documents.pid AS pid,tx_dlf_documents.record_id AS record_id,tx_dlf_documents.partof AS partof,tx_dlf_documents.thumbnail AS thumbnail,tx_dlf_documents.location AS location',
+                'tx_dlf_documents',
+                $whereClause,
+                '',
+                '',
+                '1'
+                );
+            
+            if ($GLOBALS['TYPO3_DB']->sql_num_rows($result) > 0) {
+                // TODO At the moment it's okay to assume that this is a METS document. Change this as soon as IIIF manifests can be saved. 
+                return 'METS';
+            }
+            
+        } else {
+            // Cast to string for safety reasons.
+            $location = (string) $uid;
+            
+            // Try to load a file from the url
+            // FIXME double loading and processing of files is inefficient 
+            if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location)) {
+                $content = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($location);
+                if (($xml = simplexml_load_string($content)) !== false) {
+                    /* @var $xml SimpleXMLElement */
+                    $xml->registerXPathNamespace('mets', 'http://www.loc.gov/METS/');
+                    $xpathResult = $xml->xpath('//mets:dmdSec');
+                    return ($xpathResult !== false && count($xpathResult)>0) ? 'METS' : null;
+                } elseif (IiifReader::getIiifResourceFromJsonString($content) instanceof AbstractIiifResource) {
+                    return 'IIIF';
+                } else {
+                    return null;
+                }
+            }
+        }
+    }
+    
     /**
      * This is a singleton class, thus an instance must be created by this method
      *
@@ -286,7 +335,6 @@ abstract class tx_dlf_document {
      * @return	&tx_dlf_document		Instance of this class
      */
     public static function &getInstance($uid, $pid = 0, $forceReload = FALSE) {
-        // TODO either make this method abstract or delegate to the correct child 
 
         // Sanitize input.
         $pid = max(intval($pid), 0);
@@ -327,11 +375,20 @@ abstract class tx_dlf_document {
             }
 
         }
+        
+        
 
-        // Create new instance...
-        $instance = new self($uid, $pid);
+        // Create new instance depending on format...
+        
+        $documentFormat = self::getDocumentFormat($uid, $pid);
+        
+        if ($documentFormat == 'METS') {
+            $instance = &tx_dlf_mets_document::getInstance($uid, $pid);
+        } elseif ($documentFormat == 'IIIF') {
+            //$instance = tx_dlf_iiif_manifest::
+        }
 
-        // ...and save it to registry.
+        // ...and save instance to registry.
         if ($instance->ready) {
 
             self::$registry[md5($instance->uid)] = $instance;
@@ -664,8 +721,7 @@ abstract class tx_dlf_document {
                 @ini_set('user_agent', $extConf['useragent']);
 
             }
-            
-            $this->loadLocation($location);
+            return $this->loadLocation($location);
             
         } else {
 

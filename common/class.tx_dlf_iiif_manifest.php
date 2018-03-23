@@ -1,12 +1,11 @@
 <?php
 
-use iiif\model\resources\Manifest;
-use iiif\model\resources\Canvas;
 use iiif\model\resources\Annotation;
+use iiif\model\resources\Canvas;
 use iiif\model\resources\ContentResource;
-use TYPO3\CMS\Core\Resource\FileReference;
+use iiif\model\resources\Manifest;
 
-class tx_dlf_manifest extends tx_dlf_document
+class tx_dlf_iiif_manifest extends tx_dlf_document
 {
     /**
      * This holds the whole XML file as string for serialization purposes
