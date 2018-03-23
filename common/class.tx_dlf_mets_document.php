@@ -208,14 +208,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
     protected $recordId;
 
     /**
-     * This holds the singleton object of the document
-     *
-     * @var	array (tx_dlf_document)
-     * @access protected
-     */
-    protected static $registry = array ();
-
-    /**
      * This holds the UID of the root document or zero if not multi-volumed
      *
      * @var	integer
@@ -300,20 +292,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
     protected $xml;
 
     /**
-     * This clears the static registry to prevent memory exhaustion
-     *
-     * @access	public
-     *
-     * @return	void
-     */
-    public static function clearRegistry() {
-
-        // Reset registry array.
-        self::$registry = array ();
-
-    }
-
-    /**
      * This gets the location of a file representing a physical page or track
      *
      * @access	public
@@ -374,7 +352,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
     /**
      * This is a singleton class, thus an instance must be created by this method
      *
-     * @access	public
+     * @access	protected
      *
      * @param	mixed		$uid: The unique identifier of the document to parse or URL of XML file
      * @param	integer		$pid: If > 0, then only document with this PID gets loaded
@@ -382,7 +360,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
      *
      * @return	&tx_dlf_document		Instance of this class
      */
-    public static function &getInstance($uid, $pid = 0, $forceReload = FALSE) {
+    protected static function &getMetsInstance($uid, $pid = 0, $forceReload = FALSE) {
 
         // Sanitize input.
         $pid = max(intval($pid), 0);
@@ -912,7 +890,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
             if (TYPO3_DLOG) {
 
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->init()] No METS part found in document with UID "'.$this->uid.'"', self::$extKey, SYSLOG_SEVERITY_ERROR);
+                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_mets_document->init()] No METS part found in document with UID "'.$this->uid.'"', self::$extKey, SYSLOG_SEVERITY_ERROR);
 
             }
 
@@ -948,7 +926,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
             
             if (TYPO3_DLOG) {
                 
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->load('.$location.')] Could not load XML file from "'.$location.'"', self::$extKey, SYSLOG_SEVERITY_ERROR);
+                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_mets_document->loadLocation('.$location.')] Could not load XML file from "'.$location.'"', self::$extKey, SYSLOG_SEVERITY_ERROR);
                 
             }
         }
@@ -2480,7 +2458,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
             if (TYPO3_DLOG) {
 
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->__wakeup()] Could not load XML after deserialization', self::$extKey, SYSLOG_SEVERITY_ERROR);
+                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_mets_document->__wakeup()] Could not load XML after deserialization', self::$extKey, SYSLOG_SEVERITY_ERROR);
 
             }
 

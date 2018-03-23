@@ -312,7 +312,7 @@ abstract class tx_dlf_document {
                 if (($xml = simplexml_load_string($content)) !== false) {
                     /* @var $xml SimpleXMLElement */
                     $xml->registerXPathNamespace('mets', 'http://www.loc.gov/METS/');
-                    $xpathResult = $xml->xpath('//mets:dmdSec');
+                    $xpathResult = $xml->xpath('//mets:mets');
                     return ($xpathResult !== false && count($xpathResult)>0) ? 'METS' : null;
                 } elseif (IiifReader::getIiifResourceFromJsonString($content) instanceof AbstractIiifResource) {
                     return 'IIIF';
@@ -383,9 +383,9 @@ abstract class tx_dlf_document {
         $documentFormat = self::getDocumentFormat($uid, $pid);
         
         if ($documentFormat == 'METS') {
-            $instance = &tx_dlf_mets_document::getInstance($uid, $pid);
+            $instance = &tx_dlf_mets_document::getMetsInstance($uid, $pid);
         } elseif ($documentFormat == 'IIIF') {
-            //$instance = tx_dlf_iiif_manifest::
+            $instance = tx_dlf_iiif_manifest::getIiifInstance($uid, $pid);
         }
 
         // ...and save instance to registry.
