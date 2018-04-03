@@ -103,52 +103,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
      */
     protected $formatsLoaded = FALSE;
 
-    // TODO unsure whether to keep this in abstract class
-    /**
-     * Are there any fulltext files available?
-     *
-     * @var boolean
-     * @access protected
-     */
-    protected $hasFulltext = FALSE;
-
-    // TODO unsure whether to keep this in abstract class
-    /**
-     * Last searched logical and physical page
-     *
-     * @var	array
-     * @access protected
-     */
-    protected $lastSearchedPhysicalPage = array ('logicalPage' => NULL, 'physicalPage' => NULL);
-
-    // TODO unsure whether to keep this in abstract class
-    /**
-     * This holds the logical units
-     *
-     * @var	array
-     * @access protected
-     */
-    protected $logicalUnits = array ();
-
-    // TODO unsure whether to keep this in abstract class
-    /**
-     * This holds the documents' parsed metadata array with their corresponding structMap//div's ID as array key
-     *
-     * @var	array
-     * @access protected
-     */
-    protected $metadataArray = array ();
-
-    // TODO unsure whether to keep this in abstract class
-    /**
-     * Is the metadata array loaded?
-     * @see $metadataArray
-     *
-     * @var	boolean
-     * @access protected
-     */
-    protected $metadataArrayLoaded = FALSE;
-
     /**
      * This holds the XML file's METS part as SimpleXMLElement object
      *
@@ -167,45 +121,12 @@ final class tx_dlf_mets_document extends tx_dlf_document {
     protected $parentId = 0;
 
     /**
-     * This holds the physical structure
-     *
-     * @var	array
-     * @access protected
-     */
-    protected $physicalStructure = array ();
-
-    /**
-     * This holds the physical structure metadata
-     *
-     * @var	array
-     * @access protected
-     */
-    protected $physicalStructureInfo = array ();
-
-    /**
-     * Is the physical structure loaded?
-     * @see $physicalStructure
-     *
-     * @var	boolean
-     * @access protected
-     */
-    protected $physicalStructureLoaded = FALSE;
-
-    /**
      * Is the document instantiated successfully?
      *
      * @var	boolean
      * @access protected
      */
     protected $ready = FALSE;
-
-    /**
-     * The METS file's record identifier
-     *
-     * @var	string
-     * @access protected
-     */
-    protected $recordId;
 
     /**
      * This holds the UID of the root document or zero if not multi-volumed
@@ -240,40 +161,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
      * @access protected
      */
     protected $smLinksLoaded = FALSE;
-
-    /**
-     * This holds the logical structure
-     *
-     * @var	array
-     * @access protected
-     */
-    protected $tableOfContents = array ();
-
-    /**
-     * Is the table of contents loaded?
-     * @see $tableOfContents
-     *
-     * @var	boolean
-     * @access protected
-     */
-    protected $tableOfContentsLoaded = FALSE;
-
-    /**
-     * This holds the document's thumbnail location.
-     *
-     * @var	string
-     * @access protected
-     */
-    protected $thumbnail = '';
-
-    /**
-     * Is the document's thumbnail location loaded?
-     * @see $thumbnail
-     *
-     * @var	boolean
-     * @access protected
-     */
-    protected $thumbnailLoaded = FALSE;
 
     /**
      * This holds the toplevel structure's @ID

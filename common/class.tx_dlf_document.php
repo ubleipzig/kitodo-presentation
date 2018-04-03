@@ -159,6 +159,7 @@ abstract class tx_dlf_document {
      */
     protected $ready = FALSE;
 
+    // FIXME A suitable record identifier for the IIIF implementation has to be found. The manifest id could be used, but as it is a URL, the metadata currently would never be loaded only from the database.    
     /**
      * The METS file's record identifier
      *

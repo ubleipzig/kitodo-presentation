@@ -39,6 +39,10 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     protected function __construct($uid, $pid)
     {
+        // FIXME avoid code duplications - extract common parts withtx_dlf_mets_document
+        
+        // TODO 
+        
         // Prepare to check database for the requested document.
         if (\TYPO3\CMS\Core\Utility\MathUtility::canBeInterpretedAsInteger($uid)) {
             
@@ -47,6 +51,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         } else {
             // Cast to string for safety reasons.
             $location = (string) $uid;
+            
+            // TODO The manifest or collection ID should be identical with the location and is the only resource close to a record identifier.
             
             // Try to load IIIF manifest.
             if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location) && $this->load($location)) {
@@ -94,7 +100,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $this->thumbnailLoaded = TRUE;
             
-            // Load XML file if necessary...
+            // Load iiif resource file if necessary...
             if ($this->iiif === NULL) {
                 $this->load($this->location);
             }
@@ -142,6 +148,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     protected function _getPhysicalStructure()
     {
+        if (!$this->physicalStructureLoaded) {
+        }
+        
+
+        return $this->physicalStructure;
         // TODO Auto-generated method stub
         
     }
@@ -194,6 +205,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     public function getLogicalStructure($id, $recursive = FALSE)
     {
+        
         // TODO Auto-generated method stub
         
     }
@@ -214,7 +226,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     protected function loadFormats()
     {
-        // do nothing
+        // do nothing - METS specific
         
     }
     /**
@@ -223,8 +235,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     protected function init()
     {
-        // TODO Auto-generated method stub
-        
+        // Nothing to do here, at the moment
     }
 
     /**
