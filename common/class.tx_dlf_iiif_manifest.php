@@ -4,6 +4,7 @@ use iiif\model\resources\Annotation;
 use iiif\model\resources\Canvas;
 use iiif\model\resources\ContentResource;
 use iiif\model\resources\Manifest;
+use iiif\model\resources\Sequence;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use iiif\model\helper\IiifReader;
 use iiif\model\resources\Collection;
@@ -141,6 +142,46 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         }
         
     }
+    
+    protected $useGrpsLoaded;
+    protected $useGrps;
+    
+    protected function getUseGroups($use)
+    {
+        if (!$this->useGrpsLoaded) {
+            
+            // Get configured USE attributes.
+            $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
+            
+            $useGrps = \TYPO3\CMS\Core\Utility\GeneralUtility::trimExplode(',', $extConf['fileGrps']);
+            
+            if (!empty($extConf['fileGrpThumbs'])) {
+                
+                $this->useGrps['fileGrpThumbs'] = $extConf['fileGrpThumbs'];
+                
+            }
+            
+            if (!empty($extConf['fileGrpDownload'])) {
+                
+                $this->useGrps['fileGrpDownload'] = $extConf['fileGrpDownload'];
+                
+            }
+            
+            if (!empty($extConf['fileGrpFulltext'])) {
+                
+                $this->useGrps['fileGrpFulltext'] = $extConf['fileGrpFulltext'];
+                
+            }
+            
+            if (!empty($extConf['fileGrpAudio'])) {
+                
+                $this->useGrps['fileGrpAudio'] = $extConf['fileGrpAudio'];
+                
+            }
+        }
+        
+        return array_key_exists($use, $this->useGrps) ? $this->useGrps[$use] : [];
+    }
 
     /**
      * {@inheritDoc}
@@ -148,7 +189,88 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     protected function _getPhysicalStructure()
     {
+        // Is there no physical structure array yet?
         if (!$this->physicalStructureLoaded) {
+            
+            if ($this->iiif == null || !($this->iiif instanceof Manifest)) return null;
+            
+            if ($this->iiif->getSequences() !== null && is_array($this->iiif->getSequences()) && sizeof($this->iiif->getSequences())>0)
+            {
+                $sequence = $this->iiif->getSequences()[0];
+                
+                /* @var $sequence Sequence */
+                $sequenceId = $this->iiif->getSequences()[0]->getId();
+                
+                $physSeq[0] = $sequenceId;
+                
+                $this->physicalStructureInfo[$physSeq[0]['id']] = $sequenceId;
+                
+                $this->physicalStructureInfo[$physSeq[0]['dmdId']] = $sequenceId;
+                
+                // TODO translation?
+                $this->physicalStructureInfo[$physSeq[0]['label']] = $sequence->getDefaultLabel();
+                
+                // TODO from configurable metadata; translation?
+                $this->physicalStructureInfo[$physSeq[0]['orderlabel']] = $sequence->getDefaultLabel();
+                
+                // TODO check nescessity
+                $this->physicalStructureInfo[$physSeq[0]['type']] = null;
+                
+                // TODO check nescessity
+                $this->physicalStructureInfo[$physSeq[0]['contentIds']] = null;
+                
+                // $this->physicalStructureInfo[$physSeq[0]['']] = ;
+
+                if ($sequence->getCanvases() != null && sizeof($sequence->getCanvases() > 0)) {
+                    
+                    // canvases have not order property, but the context defines canveses as @list with a specific order, so we can provide an alternative 
+                    $canvasOrder = 1;
+                    
+                    $fileUseThumbs = $this->getUseGroups('fileGrpThumbs');
+                    
+                    $fileUses = $this->getUseGroups('fileGrps');
+                    
+                    foreach ($sequence->getCanvases() as $canvas) {
+                        /* @var $canvas Canvas */
+                        
+                        $thumbnailUrl = IiifReader::getThumbnailUrlForIiifResource($canvas, $serviceProfileCache, GeneralUtility::class);
+                        
+                        // put thumbnails in thumbnail filegroup
+                        if (isset($thumbnailUrl)) {
+                            $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseThumbs] = $thumbnailUrl;
+                        }
+                        
+                        $image = $canvas->getImages()[0];
+                        
+                        /* @var $image iiif\model\resources\ContentResource */
+                        
+                        // put images in all non specific filegroups
+                        if (isset($fileUses)) {
+                            if (is_string($fileUses)) {
+                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUses] = $image->getService()->getId();
+                            }
+                            else foreach ($fileUses as $fileUse) {
+                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getService()->getId();
+                            }
+                        }
+                            
+
+                        
+                        
+                        
+                        $$elements[$canvasOrder] = $canvas->getId();
+                        
+                        $this->physicalStructureInfo[elements[$canvasOrder]]=null;
+                        
+                        // TODO Check if it is possible to look for pdf downloads in the services and put found service urls in the download group
+                        // TODO populate structural metadata info
+                        
+                        $canvasOrder++;
+                    }
+                }
+                
+            }
+            
         }
         
 
