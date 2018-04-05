@@ -310,16 +310,23 @@ abstract class tx_dlf_document {
             // FIXME double loading and processing of files is inefficient 
             if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location)) {
                 $content = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($location);
-                if (($xml = simplexml_load_string($content)) !== false) {
+                if (($xml = @simplexml_load_string($content)) !== false) {
                     /* @var $xml SimpleXMLElement */
                     $xml->registerXPathNamespace('mets', 'http://www.loc.gov/METS/');
                     $xpathResult = $xml->xpath('//mets:mets');
                     return ($xpathResult !== false && count($xpathResult)>0) ? 'METS' : null;
-                } elseif (IiifReader::getIiifResourceFromJsonString($content) instanceof AbstractIiifResource) {
-                    return 'IIIF';
                 } else {
-                    return null;
+                    if (!class_exists('\\iiif\\model\\resources\\IiifReader', false)) {
+                        
+                        require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
+                        
+                    }
+                    if (IiifReader::getIiifResourceFromJsonString($content) instanceof AbstractIiifResource) {
+                        return 'IIIF';
+                            
+                    }
                 }
+                return null;
             }
         }
     }
@@ -1620,45 +1627,7 @@ abstract class tx_dlf_document {
      *
      * @return	string		The logical structure node's ID
      */
-    protected function _getToplevelId() {
-
-        if (empty($this->toplevelId)) {
-
-            // TODO delegate
-            // Get all logical structure nodes with metadata, but without associated METS-Pointers.
-            if (($divs = $this->mets->xpath('./mets:structMap[@TYPE="LOGICAL"]//mets:div[@DMDID and not(./mets:mptr)]'))) {
-
-                // Load smLinks.
-                $this->_getSmLinks();
-
-                foreach ($divs as $div) {
-
-                    $id = (string) $div['ID'];
-
-                    // Are there physical structure nodes for this logical structure?
-                    if (array_key_exists($id, $this->smLinks['l2p'])) {
-
-                        // Yes. That's what we're looking for.
-                        $this->toplevelId = $id;
-
-                        break;
-
-                    } elseif (empty($this->toplevelId)) {
-
-                        // No. Remember this anyway, but keep looking for a better one.
-                        $this->toplevelId = $id;
-
-                    }
-
-                }
-
-            }
-
-        }
-
-        return $this->toplevelId;
-
-    }
+    protected abstract function _getToplevelId();
 
     /**
      * This returns $this->uid via __get()

@@ -153,7 +153,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             // Get configured USE attributes.
             $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
             
-            $useGrps = \TYPO3\CMS\Core\Utility\GeneralUtility::trimExplode(',', $extConf['fileGrps']);
+            if (!empty($extConf['fileGrps'])) {
+                
+                $this->useGrps['fileGrps'] = \TYPO3\CMS\Core\Utility\GeneralUtility::trimExplode(',', $extConf['fileGrps']);
+                
+            }
             
             if (!empty($extConf['fileGrpThumbs'])) {
                 
@@ -203,34 +207,39 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
                 $physSeq[0] = $sequenceId;
                 
-                $this->physicalStructureInfo[$physSeq[0]['id']] = $sequenceId;
+                $this->physicalStructureInfo[$physSeq[0]]['id'] = $sequenceId;
                 
-                $this->physicalStructureInfo[$physSeq[0]['dmdId']] = $sequenceId;
+                $this->physicalStructureInfo[$physSeq[0]]['dmdId'] = $sequenceId;
                 
                 // TODO translation?
-                $this->physicalStructureInfo[$physSeq[0]['label']] = $sequence->getDefaultLabel();
+                $this->physicalStructureInfo[$physSeq[0]]['label'] = $sequence->getDefaultLabel();
                 
                 // TODO from configurable metadata; translation?
-                $this->physicalStructureInfo[$physSeq[0]['orderlabel']] = $sequence->getDefaultLabel();
+                $this->physicalStructureInfo[$physSeq[0]]['orderlabel'] = $sequence->getDefaultLabel();
                 
                 // TODO check nescessity
-                $this->physicalStructureInfo[$physSeq[0]['type']] = null;
+                $this->physicalStructureInfo[$physSeq[0]]['type'] = null;
                 
                 // TODO check nescessity
-                $this->physicalStructureInfo[$physSeq[0]['contentIds']] = null;
+                $this->physicalStructureInfo[$physSeq[0]]['contentIds'] = null;
                 
                 // $this->physicalStructureInfo[$physSeq[0]['']] = ;
 
                 if ($sequence->getCanvases() != null && sizeof($sequence->getCanvases() > 0)) {
                     
                     // canvases have not order property, but the context defines canveses as @list with a specific order, so we can provide an alternative 
-                    $canvasOrder = 1;
+                    $canvasOrder = 0;
                     
                     $fileUseThumbs = $this->getUseGroups('fileGrpThumbs');
                     
                     $fileUses = $this->getUseGroups('fileGrps');
                     
+                    $serviceProfileCache = [];
+                    
                     foreach ($sequence->getCanvases() as $canvas) {
+                        
+                        $canvasOrder++;
+                        
                         /* @var $canvas Canvas */
                         
                         $thumbnailUrl = IiifReader::getThumbnailUrlForIiifResource($canvas, $serviceProfileCache, GeneralUtility::class);
@@ -242,41 +251,49 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         
                         $image = $canvas->getImages()[0];
                         
-                        /* @var $image iiif\model\resources\ContentResource */
+                        /* @var $image iiif\model\resources\Annotation */
                         
                         // put images in all non specific filegroups
                         if (isset($fileUses)) {
                             if (is_string($fileUses)) {
-                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUses] = $image->getService()->getId();
+                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUses] = $image->getResource()->getService()->getId();
                             }
                             else foreach ($fileUses as $fileUse) {
-                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getService()->getId();
+                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getResource()->getService()->getId();
                             }
                         }
-                            
-
                         
-                        
-                        
+                        // TODO populate structural metadata info
                         $$elements[$canvasOrder] = $canvas->getId();
                         
-                        $this->physicalStructureInfo[elements[$canvasOrder]]=null;
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['id']=$canvas->getId();
+                        
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['dmdId']=null;
+                        
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['label']=$canvas->getDefaultLabel();
+                        
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['orderlabel']=$canvas->getDefaultLabel();
+                        
+                        // assume that a canvas always represents a page
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['type']='page';
+                        
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['contentIds']=null;
                         
                         // TODO Check if it is possible to look for pdf downloads in the services and put found service urls in the download group
-                        // TODO populate structural metadata info
                         
-                        $canvasOrder++;
                     }
+                    
+                    $this->numPages = $canvasOrder;
                 }
                 
             }
             
+            $this->physicalStructureLoaded = TRUE;
+            
         }
-        
 
         return $this->physicalStructure;
-        // TODO Auto-generated method stub
-        
+
     }
 
     /**
@@ -338,7 +355,73 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     public function getMetadata($id, $cPid = 0)
     {
-        // TODO Auto-generated method stub
+        // TODO load metadata configuration from
+        
+        if (!empty($this->metadataArray[$id]) && $this->metadataArray[0] == $cPid) {
+            
+            return $this->metadataArray[$id];
+            
+        }
+
+        // Initialize metadata array with empty values.
+        // TODO initialize metadata in abstract class
+        $metadata = array (
+            'title' => array (),
+            'title_sorting' => array (),
+            'author' => array (),
+            'place' => array (),
+            'year' => array (),
+            'prod_id' => array (),
+            'record_id' => array (),
+            'opac_id' => array (),
+            'union_id' => array (),
+            'urn' => array (),
+            'purl' => array (),
+            'type' => array (),
+            'volume' => array (),
+            'volume_sorting' => array (),
+            'collection' => array (),
+            'owner' => array (),
+        );
+
+        if ($this->iiif instanceof Manifest || $this->iiif instanceof Collection) {
+            
+            // TODO multiple labels, translations; configurable
+            $metadata['title'][] = $this->iiif->getDefaultLabel();
+            
+        }
+        
+        if ($this->iiif instanceof Manifest) {
+            
+            // TODO for every metadatum: translation; multiple values; configuration 
+            
+            $metadata['author'][] = $this->iiif->getMetadataForLabel('Author');
+            
+            $metadata['place'][] = $this->iiif->getMetadataForLabel('Place of publication');
+            
+            $metadata['place_sorting'][] = $this->iiif->getMetadataForLabel('Place of publication');
+           
+            $metadata['year'][] = $this->iiif->getMetadataForLabel('Date of publication');
+            
+            $metadata['year_sorting'][] = $this->iiif->getMetadataForLabel('Date of publication');
+            
+            $metadata['prod_id'][] = $this->iiif->getMetadataForLabel('Kitodo');
+            
+            $metadata['record_id'][] = $this->recordId;
+            
+            $metadata['union_id'][] = $this->iiif->getMetadataForLabel('Source PPN (SWB)');
+            
+            $metadata['collection'][] = $this->iiif->getMetadataForLabel('Collection');
+            
+            $metadata['owner'][] = $this->iiif->getMetadataForLabel('Owner');
+            
+            // $metadata[''][] = $this->iiif->getMetadataForLabel('');
+            
+        }
+        
+        // TODO use configuration
+        
+        return $metadata;
         
     }
 
@@ -381,8 +464,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
             }
         }
-            
-        
         
     }
     public function __sleep() {
@@ -394,6 +475,20 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         return array ('uid', 'pid', 'recordId', 'parentId', 'asJson');
     }
 
+    protected function _getToplevelId()
+    {
+        if (empty($this->toplevelId)) {
+            if (isset($this->iiif))
+            {
+                $this->toplevelId = $this->iiif->getId();
+            }
+        }
+        
+        return $this->toplevelId;
+        
+    }
+        
+    
     /**
      * This magic method is executed after the object is deserialized
      * @see __sleep()

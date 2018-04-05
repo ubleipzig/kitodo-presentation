@@ -1993,7 +1993,8 @@ final class tx_dlf_mets_document extends tx_dlf_document {
      *
      * @return	string		The logical structure node's ID
      */
-    protected function _getToplevelId() {
+    protected function _getToplevelId()
+    {
 
         if (empty($this->toplevelId)) {
 
