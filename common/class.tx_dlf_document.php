@@ -134,6 +134,23 @@ abstract class tx_dlf_document {
      * @access protected
      */
     protected $physicalStructureLoaded = FALSE;
+    
+    /**
+     * This holds the smLinks between logical and physical structMap
+     *
+     * @var	array
+     * @access protected
+     */
+    protected $smLinks = array ('l2p' => array (), 'p2l' => array ());
+    
+    /**
+     * Are the smLinks loaded?
+     * @see $smLinks
+     *
+     * @var	boolean
+     * @access protected
+     */
+    protected $smLinksLoaded = FALSE;
 
     /**
      * This holds the PID of the document or zero if not in database

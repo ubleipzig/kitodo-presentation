@@ -9,6 +9,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use iiif\model\helper\IiifReader;
 use iiif\model\resources\Collection;
 use iiif\model\resources\AbstractIiifResource;
+use iiif\model\resources\Range;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -345,7 +346,106 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     public function getLogicalStructure($id, $recursive = FALSE)
     {
         
-        // TODO Auto-generated method stub
+        $details = array ();
+        
+        if (!$recursive && !empty($this->logicalUnits[$id])) {
+            
+            return $this->logicalUnits[$id];
+            
+        } elseif (!empty($this->logicalUnits[$id])) {
+            
+            $logUnits[] = $this->logicalUnits[$id];
+            
+        } else {
+            
+            $logUnits[] = $this->iiif;
+            
+            if ($this->iiif instanceof Manifest && $this->iiif->getStructures()!=null) {
+                
+                $logUnits = $this->iiif->getStructures();
+                
+            }
+        }
+
+        if (!empty($logUnits)) {
+            
+            if (!$recursive) {
+                
+                $details = $this->getLogicalStructureInfo($logUnits[0]);
+                
+            } else {
+                
+                foreach ($logUnits as $logUnit) {
+                    
+                    $this->tableOfContents[] = $this->getLogicalStructureInfo($logUnit, TRUE);
+                    
+                }
+                
+            }
+            
+        }
+        
+        return $details;
+        
+    }
+    
+    
+    protected function getLogicalStructureInfo(AbstractIiifResource $resource, $recursive = false) {
+        
+        $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
+        
+        $details = array ();
+        
+        $details['id'] = $resource->getId();
+        
+        $details['dmdId'] = '';
+        
+        $details['label'] = $resource->getDefaultLabel() !== null ? $resource->getDefaultLabel() : '';
+        
+        $details['orderlabel'] = $resource->getDefaultLabel() !== null ? $resource->getDefaultLabel() : '';
+
+        $details['contentIds'] = '';
+        
+        $details['volume'] = '';
+        
+        // TODO set volume information?
+        
+        $details['pagination'] = '';
+        
+        $details['type'] = '';
+        
+        $details['thumbnailId'] = '';
+        
+        $details['points'] = '';
+
+        // Load strucural mapping
+        $this->_getSmLinks();
+        
+        // Load physical structure.
+        $this-> _getPhysicalStructure();
+        
+        if ($resource instanceof Manifest) {
+
+            //$resource->getContainedResourceById($id)
+            
+            $startCanvas = $resource->getSequences()[0]->getStartCanvas();
+
+            if ($startCanvas != null) {
+                
+                $startCanvasIndex = array_search($startCanvas, $resource->getSequences()[0]->getCanvases());
+                
+                if ($startCanvasIndex!==false) {
+                    
+                    
+                    
+                }
+                
+            }
+            
+            
+            $details['points'] = [];
+            
+        }
         
     }
 
@@ -424,6 +524,100 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         return $metadata;
         
     }
+    
+    protected function _getSmLinks() {
+        
+        if (!$this->smLinksLoaded && isset($this->iiif) && $this->iiif instanceof Manifest) {
+            
+            if ($this->iiif->getSequences()!==null && sizeof($this->iiif->getSequences())>0) {
+                
+                $sequenceCanvases = $this->iiif->getSequences()[0]->getCanvases();
+                
+                if ($sequenceCanvases != null && sizeof($sequenceCanvases) >0) {
+                    
+                    foreach ($this->iiif->getSequences()[0]->getCanvases() as $canvas) {
+                        
+                        $this->smLinkCanvasToResource($canvas, $this->iiif->getSequences()[0]);
+                        
+                    }
+                        
+                }
+                
+            }
+            
+            if ($this->iiif->getStructures() !=null && sizeof($this->iiif->getStructures())>0) {
+                
+                foreach ($this->iiif->getStructures() as $range) {
+                    
+                    $this->smLinkRangeCanvasesRecursively($range);
+                    
+                }
+
+            }
+            
+            $this->smLinksLoaded = true;
+        
+        }
+            
+    }
+    
+    private function smLinkRangeCanvasesRecursively(Range $range) {
+        
+        // map range's canvases including all child ranges' canvases
+        
+        foreach ($range->getAllCanvases() as $canvas) {
+            
+            $this->smLinkCanvasToResource($canvas, $range);
+            
+        }
+        
+        // recursive call for all ranges
+        
+        if ($range->getRanges()!==null && sizeof($range->getRanges())) {
+            
+            foreach ($range->getRanges() as $childRange) {
+                
+                $this->smLinkRangeCanvasesRecursively($childRange);
+                
+            }
+                
+        }
+        
+        // iterate through members and map all member canvases, call self for all member ranges
+        
+        if ($range->getMembers()!==null && sizeof($range->getMembers())>0) {
+            
+            foreach ($range->getMembers() as $member) {
+                
+                if ($member instanceof Canvas) {
+                    
+                    $this->smLinkCanvasToResource($member, $range);
+                    
+                }
+                
+                if ($member instanceof Range) {
+                    
+                    $this->smLinkRangeCanvasesRecursively($member);
+                    
+                }
+                
+            }
+            
+        }
+        
+    }
+    
+    private function smLinkCanvasToResource(Canvas $canvas, AbstractIiifResource $resource)
+    {
+        
+        $this->smLinks['l2p'][$resource->getId()][] = $canvas->getId();
+        
+        $this->smLinks['p2l'][$canvas->getId()][] = $resource->getId();
+        
+    }
+        
+    
+    
 
     /**
      * {@inheritDoc}
