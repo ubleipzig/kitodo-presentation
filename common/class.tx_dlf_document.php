@@ -326,26 +326,39 @@ abstract class tx_dlf_document {
             // Try to load a file from the url
             // FIXME double loading and processing of files is inefficient 
             if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location)) {
+                
                 $content = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($location);
+                
                 if (($xml = @simplexml_load_string($content)) !== false) {
+                    
                     /* @var $xml SimpleXMLElement */
                     $xml->registerXPathNamespace('mets', 'http://www.loc.gov/METS/');
+                    
                     $xpathResult = $xml->xpath('//mets:mets');
+                    
                     return ($xpathResult !== false && count($xpathResult)>0) ? 'METS' : null;
+                    
                 } else {
+                    
                     if (!class_exists('\\iiif\\model\\resources\\IiifReader', false)) {
                         
                         require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
                         
                     }
+                    
                     if (IiifReader::getIiifResourceFromJsonString($content) instanceof AbstractIiifResource) {
+                        
                         return 'IIIF';
                             
                     }
                 }
+                
                 return null;
+                
             }
+            
         }
+        
     }
     
     /**
