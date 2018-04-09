@@ -375,9 +375,16 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
             } else {
                 
+                // cache the ranges - they might occure multiple times in the strucures "tree" - with full data as well as referenced as id
+                $processedStructures = array();
+                
                 foreach ($logUnits as $logUnit) {
                     
-                    $this->tableOfContents[] = $this->getLogicalStructureInfo($logUnit, TRUE);
+                    if (array_search($logUnit->getId(), $processedStructures) == false) {
+                        
+                        $this->tableOfContents[] = $this->getLogicalStructureInfo($logUnit, TRUE, $processedStructures);
+                        
+                    }
                     
                 }
                 
@@ -390,7 +397,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     }
     
     
-    protected function getLogicalStructureInfo(AbstractIiifResource $resource, $recursive = false) {
+    protected function getLogicalStructureInfo(AbstractIiifResource $resource, $recursive = false, &$processedStructures) {
         
         $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
         
@@ -414,7 +421,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         $details['type'] = '';
         
-        $details['thumbnailId'] = '';
+        $details['thumbnailId'] = IiifReader::getThumbnailUrlForIiifResource($resource);
         
         $details['points'] = '';
 
@@ -426,26 +433,83 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         if ($resource instanceof Manifest) {
 
-            //$resource->getContainedResourceById($id)
+            $startCanvas = $resource->getSequences()[0]->getStartCanvasOrFirstCanvas();
             
-            $startCanvas = $resource->getSequences()[0]->getStartCanvas();
+        } elseif ($resource instanceof Range) {
+            
+            $startCanvas = $resource->getStartCanvasOrFirstCanvas();
+            
+        }
 
-            if ($startCanvas != null) {
+        if ($startCanvas != null) {
+            
+            $startCanvasIndex = array_search($startCanvas, $this->iiif->getSequences()[0]->getCanvases());
+            
+            if ($startCanvasIndex!==false) {
                 
-                $startCanvasIndex = array_search($startCanvas, $resource->getSequences()[0]->getCanvases());
+                $details['points'] = $startCanvasIndex + 1;
                 
-                if ($startCanvasIndex!==false) {
+            }
+            
+        }
+        
+        // Keep for later usage.
+        $this->logicalUnits[$details['id']] = $details;
+        
+        // Walk the structure recursively? And are there any children of the current element?
+        if ($recursive) {
+            
+            $processedStructures[] = $resource->getId();
+            
+            $details['children'] = array ();
+            
+            if ($resource instanceof Manifest && $resource->getStructures()!==null && sizeof($resource->getStructures())>0) {
                     
+                foreach ($resource->getStructures() as $range) {
                     
+                    if ((array_search($resource->getId(), $processedStructures) == false)) {
+                        
+                        $details['children'][] = $this->getLogicalStructureInfo($range, TRUE, $processedStructures);
+                        
+                    }
+                    
+                }
+                
+            } elseif ($resource instanceof Range) {
+                
+                if ($resource->getRanges() !== null && sizeof($resource->getRanges())>0) {
+
+                    foreach ($resource->getRanges() as $range) {
+                        
+                        if ((array_search($resource->getId(), $processedStructures) == false)) {
+                            
+                            $details['children'][] = $this->getLogicalStructureInfo($range, TRUE, $processedStructures);
+                            
+                        }
+                        
+                    }
+                    
+                }
+                
+                if ($resource->getMembers() !== null && sizeof($resource->getMembers())>0) {
+                    
+                    foreach ($resource->getMembers() as $member) {
+                        
+                        if ($member instanceof Range && (array_search($resource->getId(), $processedStructures) == false)) {
+                            
+                            $details['children'][] = $this->getLogicalStructureInfo($member, TRUE, $processedStructures);
+                            
+                        }
+                        
+                    }
                     
                 }
                 
             }
             
-            
-            $details['points'] = [];
-            
         }
+        
+        return $details;
         
     }
 
