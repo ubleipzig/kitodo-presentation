@@ -1,14 +1,14 @@
 <?php
 
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
+use iiif\model\helper\IiifReader;
+use iiif\model\resources\AbstractIiifResource;
 use iiif\model\resources\Annotation;
 use iiif\model\resources\Canvas;
+use iiif\model\resources\Collection;
 use iiif\model\resources\ContentResource;
 use iiif\model\resources\Manifest;
-use iiif\model\resources\Sequence;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
-use iiif\model\helper\IiifReader;
-use iiif\model\resources\Collection;
-use iiif\model\resources\AbstractIiifResource;
 use iiif\model\resources\Range;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
@@ -203,7 +203,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             {
                 $sequence = $this->iiif->getSequences()[0];
                 
-                /* @var $sequence Sequence */
+                /* @var $sequence \iiif\model\resources\Sequence */
                 $sequenceId = $this->iiif->getSequences()[0]->getId();
                 
                 $physSeq[0] = $sequenceId;
@@ -247,7 +247,9 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         
                         // put thumbnails in thumbnail filegroup
                         if (isset($thumbnailUrl)) {
+                            
                             $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseThumbs] = $thumbnailUrl;
+                            
                         }
                         
                         $image = $canvas->getImages()[0];
@@ -256,19 +258,22 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         
                         // put images in all non specific filegroups
                         if (isset($fileUses)) {
-                            if (is_string($fileUses)) {
-                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUses] = $image->getResource()->getService()->getId();
-                            }
-                            else foreach ($fileUses as $fileUse) {
-                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getResource()->getService()->getId();
+                            
+                            foreach ($fileUses as $fileUse) {
+                                
+                                // $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getResource()->getService()->getId();
+                                
+                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getResource()->getId();
+                                
                             }
                         }
                         
-                        // TODO populate structural metadata info
-                        $$elements[$canvasOrder] = $canvas->getId();
+                        // populate structural metadata info
+                        $elements[$canvasOrder] = $canvas->getId();
                         
                         $this->physicalStructureInfo[$elements[$canvasOrder]]['id']=$canvas->getId();
                         
+                        // TODO check replacement
                         $this->physicalStructureInfo[$elements[$canvasOrder]]['dmdId']=null;
                         
                         $this->physicalStructureInfo[$elements[$canvasOrder]]['label']=$canvas->getDefaultLabel();
@@ -280,11 +285,33 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         
                         $this->physicalStructureInfo[$elements[$canvasOrder]]['contentIds']=null;
                         
+                        if (isset($fileUses)) {
+                            
+                            foreach ($fileUses as $fileUse) {
+                                
+                                // $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUse] = $image->getResource()->getService()->getId();
+
+                                $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUse] = $image->getResource()->getId();
+                                
+                                
+                            }
+                        }
+
+                        if (isset($thumbnailUrl)) {
+                            
+                            $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseThumbs] = $thumbnailUrl;
+                            
+                        }
+                        
                         // TODO Check if it is possible to look for pdf downloads in the services and put found service urls in the download group
                         
                     }
                     
                     $this->numPages = $canvasOrder;
+                    
+                    // Merge and re-index the array to get nice numeric indexes.
+                    $this->physicalStructure = array_merge($physSeq, $elements);
+
                 }
                 
             }
@@ -303,7 +330,26 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     public function getFileLocation($id)
     {
-        // TODO Auto-generated method stub
+        
+        $resource = $this->iiif->getContainedResourceById($id);
+        
+        if (isset($resource)) {
+            
+            if ($resource instanceof Canvas) {
+                
+                return $resource->getImages()[0]->getService()->getId();
+                
+            } elseif ($resource instanceof ContentResource) {
+                
+                return $resource->getService()->getId();
+                
+            }
+            
+        } else {
+            
+            return $id;
+            
+        }
         
     }
 
@@ -313,14 +359,35 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     public function getFileMimeType($id)
     {
-        $fileResource = $this->manifest->getContainedResourceById($id);
+        $fileResource = $this->iiif->getContainedResourceById($id);
+        
         if ($fileResource instanceof Canvas) {
-            $format = $fileResource->getImages()[0]->getResource()->getFormat();
+            
+            // $format = $fileResource->getImages()[0]->getResource()->getFormat();
+            
+            $format = "application/vnd.kitodo.iiif";
+            
         } elseif ($fileResource instanceof Annotation) {
-            $format = $fileResource->getResource()->getFormat();
+            
+            // $format = $fileResource->getResource()->getFormat();
+            
+            $format = "application/vnd.kitodo.iiif";
+            
+            
         } elseif ($fileResource instanceof ContentResource) {
-            $format = $fileResource->getFormat();
+            
+            // $format = $fileResource->getFormat();
+            
+            $format = "application/vnd.kitodo.iiif";
+            
+        } else {
+
+            // Assumptions: this can only be the thumbnail and the thumbnail is a jpeg - TODO determine mimetype
+            $format = "image/jpeg";
+            
         }
+        
+        
         // TODO decide whether to use the given format (if existent) or 'application/vnd.kitodo.iiif'
         
         return $format;
@@ -397,7 +464,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     }
     
     
-    protected function getLogicalStructureInfo(AbstractIiifResource $resource, $recursive = false, &$processedStructures) {
+    protected function getLogicalStructureInfo(AbstractIiifResource $resource, $recursive = false, &$processedStructures = array()) {
         
         $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
         
@@ -431,13 +498,19 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         // Load physical structure.
         $this-> _getPhysicalStructure();
         
+        $canvases = array();
+        
         if ($resource instanceof Manifest) {
 
             $startCanvas = $resource->getSequences()[0]->getStartCanvasOrFirstCanvas();
             
+            $canvases = $resource->getSequences()[0]->getCanvases();
+            
         } elseif ($resource instanceof Range) {
             
             $startCanvas = $resource->getStartCanvasOrFirstCanvas();
+            
+            $canvases = $resource->getAllCanvases();
             
         }
 
@@ -453,9 +526,30 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
         }
         
+        $useGroups = $this->getUseGroups('fileGrps');
+        
+        if (is_string($useGroups)) {
+            
+            $useGroups = array($useGroups);
+            
+        }
+        
+        if (isset($canvases) && sizeof($canvases)>0) {
+            
+            foreach ($canvases as $canvas) {
+                
+                foreach ($useGroups as $fileUse) {
+
+//                    $details['files'][$fileUse[]]  ;
+                    
+                }
+                
+            }
+            
+        }
+        
         // Keep for later usage.
         $this->logicalUnits[$details['id']] = $details;
-        
         // Walk the structure recursively? And are there any children of the current element?
         if ($recursive) {
             
@@ -578,8 +672,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             $metadata['collection'][] = $this->iiif->getMetadataForLabel('Collection');
             
             $metadata['owner'][] = $this->iiif->getMetadataForLabel('Owner');
-            
-            // $metadata[''][] = $this->iiif->getMetadataForLabel('');
             
         }
         
@@ -725,6 +817,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
     }
     public function __sleep() {
+        
         // TODO implement serializiation in IIIF library
         $jsonArray = $this->iiif->getOriginalJsonArray();
 
