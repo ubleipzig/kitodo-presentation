@@ -488,7 +488,9 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         $details['type'] = '';
         
-        $details['thumbnailId'] = IiifReader::getThumbnailUrlForIiifResource($resource);
+        $dummy = array();
+        
+        $details['thumbnailId'] = IiifReader::getThumbnailUrlForIiifResource($resource, $dummy, GeneralUtility::class);
         
         $details['points'] = '';
 
