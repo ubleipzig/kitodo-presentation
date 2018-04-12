@@ -221,6 +221,12 @@
 			<label index="update.copyIndexRelatedColumns">Copy index related columns...</label>
 			<label index="update.copyIndexRelatedColumnsOkay">...successfully completed!</label>
 			<label index="update.copyIndexRelatedColumnsNotOkay">...incomplete! The index related columns (tokenized, stored, indexed, boost, autocomplete) of table tx_dlf_metadata have to be copied manually.</label>
+			<label index="update.documentAddFormat">Add document format column...</label>
+			<label index="update.documentAddFormatOkay">...successfully completed!</label>
+			<label index="update.documentAddFormatNotOkay">...incomplete! Please add column document_format for table tx_dlf_document manually.</label>
+			<label index="update.documentSetFormatForOldEntries">Set document format for old entries to 'METS'...</label>
+			<label index="update.documentSetFormatForOldEntriesOkay">...successfully completed!</label>
+			<label index="update.documentSetFormatForOldEntriesNotOkay">...incomplete! Please set missing tx_dlf_document.document_format values to 'METS'.</label>
 
 		</languageKey>
 		<languageKey index="de" type="array">
@@ -430,6 +436,10 @@
 			<label index="update.copyIndexRelatedColumns">Kopieren der Index bezogenen Tabellenspalten...</label>
 			<label index="update.copyIndexRelatedColumnsOkay">...erfolgreich beendet! Tabellen wurden erfolgreich kopiert.</label>
 			<label index="update.copyIndexRelatedColumnsNotOkay">...abgebrochen! Das Kopieren der Index bezogenen Tabellenspalten (tokenized, stored, indexed, boost, autocomplete) der Tabelle tx_dlf_metadata muss manuell erfolgen.</label>
+			<label index="update.documentAddFormat">Füge Format-Spalte zu Dokument-Tabelle hinzu...</label>
+			<label index="update.documentAddFormatOkay">...erfolgreich beendet!</label>
+			<label index="update.documentAddFormatNotOkay">...abgebrochen! Bitte fügen Sie die Spalte document_format manuell zur Tabelle table tx_dlf_document hinzu.</label>
+			
 		</languageKey>
 	</data>
 </T3locallang>

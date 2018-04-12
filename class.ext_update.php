@@ -44,7 +44,11 @@ class ext_update {
 
             return TRUE;
 
-        }
+        } elseif ($this->hasNoFormatForDocument()) {
+            
+            return TRUE;
+            
+        } 
 
         return FALSE;
 
@@ -115,6 +119,13 @@ class ext_update {
 
             $this->renameIndexRelatedColumns();
 
+        }
+        
+        // add format field for tx_dlf_document to distinguish between METS and IIIF
+        if ($this->hasNoFormatForDocument()) {
+            
+            $this->updateDocumentAddFormat();
+            
         }
 
         return $this->content;
@@ -279,5 +290,122 @@ class ext_update {
         }
 
     }
+    
+    protected function hasNoFormatForDocument() {
+        
+        $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
+            'column_name',
+            'INFORMATION_SCHEMA.COLUMNS',
+            'TABLE_NAME = "tx_dlf_documents" AND column_name = "document_format"',
+            '',
+            '',
+            ''
+            );
+        
+        while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
+            
+            if ($resArray['column_name'] == 'document_format') {
+                
+                return false;
+                
+            }
+            
+        }
+        
+        return true;
+            
+    }
+        
+    
+    protected function formatForDocumentIsNotSet() {
+        
+        $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
+            'count(*) as numberOfEntries',
+            'tx_dlf_documents',
+            'document_format IS NULL OR document_format=""',
+            '',
+            '',
+            ''
+            );
+        
+        while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
+            
+            if ($resArray['numberOfEntries'] > 0) {
+                
+                return true;
+                
+            }
+            
+        }
+        
+        return false;
+        
+    }
+        
+    protected function updateDocumentAddFormat() {
+        
+        $sqlQuery = 'ALTER TABLE tx_dlf_documents ADD COLUMN document_format varchar(100) DEFAULT "" NOT NULL;';
+        
+        $result = $GLOBALS['TYPO3_DB']->sql_query($sqlQuery);
+        
+        if ($result) {
+            
+            $message = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
+                'TYPO3\\CMS\\Core\\Messaging\\FlashMessage',
+                $GLOBALS['LANG']->getLL('update.documentAddFormatOkay', TRUE),
+                $GLOBALS['LANG']->getLL('update.documentAddFormat', TRUE),
+                \TYPO3\CMS\Core\Messaging\FlashMessage::OK,
+                FALSE
+                );
+            
+        } else {
+            
+            $message = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
+                'TYPO3\\CMS\\Core\\Messaging\\FlashMessage',
+                $GLOBALS['LANG']->getLL('update.documentAddFormatNotOkay', TRUE),
+                $GLOBALS['LANG']->getLL('update.documentAddFormat', TRUE),
+                \TYPO3\CMS\Core\Messaging\FlashMessage::WARNING,
+                FALSE
+                );
+            
+            $this->content .= $message->render();
+            
+            return;
+            
+        }
 
+        $this->content .= $message->render();
+        
+        $sqlQuery = 'UPDATE `tx_dlf_documents` SET `document_format`="METS" WHERE `document_format` IS NULL OR `document_format`="";';
+        
+        $result = $GLOBALS['TYPO3_DB']->sql_query($sqlQuery);
+        
+        if ($result) {
+            
+            $message = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
+                'TYPO3\\CMS\\Core\\Messaging\\FlashMessage',
+                $GLOBALS['LANG']->getLL('update.documentSetFormatForOldEntriesOkay', TRUE),
+                $GLOBALS['LANG']->getLL('update.documentSetFormatForOldEntries', TRUE),
+                \TYPO3\CMS\Core\Messaging\FlashMessage::OK,
+                FALSE
+                );
+            
+        } else {
+            
+            $message = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
+                'TYPO3\\CMS\\Core\\Messaging\\FlashMessage',
+                $GLOBALS['LANG']->getLL('update.documentSetFormatForOldEntriesNotOkay', TRUE),
+                $GLOBALS['LANG']->getLL('update.documentSetFormatForOldEntries', TRUE),
+                \TYPO3\CMS\Core\Messaging\FlashMessage::WARNING,
+                FALSE
+                );
+            
+            return;
+            
+        }
+        
+        $this->content .= $message->render();
+        
+    }
+    
 }
