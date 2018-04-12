@@ -719,6 +719,8 @@ final class tx_dlf_mets_document extends tx_dlf_document {
     public function getTitledata($cPid = 0) {
 
         $titledata = $this->getMetadata($this->_getToplevelId(), $cPid);
+        
+        $titledata['document_format'] = 'METS'; 
 
         // Set record identifier for METS file if not present.
         if (is_array($titledata) && array_key_exists('record_id', $titledata)) {
@@ -883,472 +885,34 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
     }
 
-    /**
-     * This saves the document to the database and index
-     *
-     * @access	public
-     *
-     * @param	integer		$pid: The PID of the saved record
-     * @param	integer		$core: The UID of the Solr core for indexing
-     *
-     * @return	boolean		TRUE on success or FALSE on failure
-     */
-    public function save($pid = 0, $core = 0) {
-
-        // Save parameters for logging purposes.
-        $_pid = $pid;
-
-        $_core = $core;
-
-        if (TYPO3_MODE !== 'BE') {
-
-            if (TYPO3_DLOG) {
-
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->save('.$_pid.', '.$_core.')] Saving a document is only allowed in the backend', self::$extKey, SYSLOG_SEVERITY_ERROR);
-
-            }
-
-            return FALSE;
-
-        }
-
-        // Make sure $pid is a non-negative integer.
-        $pid = max(intval($pid), 0);
-
-        // Make sure $core is a non-negative integer.
-        $core = max(intval($core), 0);
-
-        // If $pid is not given, try to get it elsewhere.
-        if (!$pid && $this->pid) {
-
-            // Retain current PID.
-            $pid = $this->pid;
-
-        } elseif (!$pid) {
-
-            if (TYPO3_DLOG) {
-
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->save('.$_pid.', '.$_core.')] Invalid PID "'.$pid.'" for document saving', self::$extKey, SYSLOG_SEVERITY_ERROR);
-
-            }
-
-            return FALSE;
-
-        }
-
-        // Set PID for metadata definitions.
-        $this->cPid = $pid;
-
-        // Set UID placeholder if not updating existing record.
-        if ($pid != $this->pid) {
-
-            $this->uid = uniqid('NEW');
-
-        }
-
-        // Get metadata array.
-        $metadata = $this->getTitledata($pid);
-
-        // Check for record identifier.
-        if (empty($metadata['record_id'][0])) {
-
-            if (TYPO3_DLOG) {
-
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->save('.$_pid.', '.$_core.')] No record identifier found to avoid duplication', self::$extKey, SYSLOG_SEVERITY_ERROR);
-
-            }
-
-            return FALSE;
-
-        }
-
-        // Load plugin configuration.
-        $conf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
-
-        // Get UID for user "_cli_dlf".
-        $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-            'be_users.uid AS uid',
-            'be_users',
-            'username='.$GLOBALS['TYPO3_DB']->fullQuoteStr('_cli_dlf', 'be_users').\TYPO3\CMS\Backend\Utility\BackendUtility::BEenableFields('be_users').\TYPO3\CMS\Backend\Utility\BackendUtility::deleteClause('be_users'),
-            '',
-            '',
-            '1'
-        );
-
-        if ($GLOBALS['TYPO3_DB']->sql_num_rows($result)) {
-
-            list ($be_user) = $GLOBALS['TYPO3_DB']->sql_fetch_row($result);
-
-        } else {
-
-            if (TYPO3_DLOG) {
-
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->save('.$_pid.', '.$_core.')] Backend user "_cli_dlf" not found or disabled', self::$extKey, SYSLOG_SEVERITY_ERROR);
-
-            }
-
-            return FALSE;
-
-        }
-
-        // Get UID for structure type.
-        $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-            'tx_dlf_structures.uid AS uid',
-            'tx_dlf_structures',
-            'tx_dlf_structures.pid='.intval($pid).' AND tx_dlf_structures.index_name='.$GLOBALS['TYPO3_DB']->fullQuoteStr($metadata['type'][0], 'tx_dlf_structures').tx_dlf_helper::whereClause('tx_dlf_structures'),
-            '',
-            '',
-            '1'
-        );
-
-        if ($GLOBALS['TYPO3_DB']->sql_num_rows($result)) {
-
-            list ($structure) = $GLOBALS['TYPO3_DB']->sql_fetch_row($result);
-
-        } else {
-
-            if (TYPO3_DLOG) {
-
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->save('.$_pid.', '.$_core.')] Could not identify document/structure type '.$GLOBALS['TYPO3_DB']->fullQuoteStr($metadata['type'][0], 'tx_dlf_structures'),
-                                            self::$extKey, SYSLOG_SEVERITY_ERROR);
-
-            }
-
-            return FALSE;
-
-        }
-
-        $metadata['type'][0] = $structure;
-
-        // Get UIDs for collections.
-        $collections = array ();
-
-        $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-            'tx_dlf_collections.index_name AS index_name,tx_dlf_collections.uid AS uid',
-            'tx_dlf_collections',
-            'tx_dlf_collections.pid='.intval($pid).' AND tx_dlf_collections.cruser_id='.intval($be_user).' AND tx_dlf_collections.fe_cruser_id=0'.tx_dlf_helper::whereClause('tx_dlf_collections'),
-            '',
-            '',
-            ''
-        );
-
-        for ($i = 0, $j = $GLOBALS['TYPO3_DB']->sql_num_rows($result); $i < $j; $i++) {
-
-            $resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result);
-
-            $collUid[$resArray['index_name']] = $resArray['uid'];
-
-        }
-
-        foreach ($metadata['collection'] as $collection) {
-
-            if (!empty($collUid[$collection])) {
-
-                // Add existing collection's UID.
-                $collections[] = $collUid[$collection];
-
-            } else {
-
-                // Insert new collection.
-                $collNewUid = uniqid('NEW');
-
-                $collData['tx_dlf_collections'][$collNewUid] = array (
-                    'pid' => $pid,
-                    'label' => $collection,
-                    'index_name' => $collection,
-                    'oai_name' => (!empty($conf['publishNewCollections']) ? $collection : ''),
-                    'description' => '',
-                    'documents' => 0,
-                    'owner' => 0,
-                    'status' => 0,
-                );
-
-                $substUid = tx_dlf_helper::processDB($collData);
-
-                // Prevent double insertion.
-                unset ($collData);
-
-                // Add new collection's UID.
-                $collections[] = $substUid[$collNewUid];
-
-                if (!defined('TYPO3_cliMode')) {
-
-                    $message = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
-                        'TYPO3\\CMS\\Core\\Messaging\\FlashMessage',
-                        htmlspecialchars(sprintf(tx_dlf_helper::getLL('flash.newCollection'), $collection, $substUid[$collNewUid])),
-                        tx_dlf_helper::getLL('flash.attention', TRUE),
-                        \TYPO3\CMS\Core\Messaging\FlashMessage::INFO,
-                        TRUE
-                    );
-
-                    tx_dlf_helper::addMessage($message);
-
-                }
-
-            }
-
-        }
-
-        // Preserve user-defined collections.
-        $result = $GLOBALS['TYPO3_DB']->exec_SELECT_mm_query(
-            'tx_dlf_collections.uid AS uid',
-            'tx_dlf_documents',
-            'tx_dlf_relations',
-            'tx_dlf_collections',
-            'AND tx_dlf_documents.pid='.intval($pid).' AND tx_dlf_collections.pid='.intval($pid).' AND tx_dlf_documents.uid='.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->uid, 'tx_dlf_documents').' AND NOT (tx_dlf_collections.cruser_id='.intval($be_user).' AND tx_dlf_collections.fe_cruser_id=0) AND tx_dlf_relations.ident='.$GLOBALS['TYPO3_DB']->fullQuoteStr('docs_colls', 'tx_dlf_relations'),
-            '',
-            '',
-            ''
-        );
-
-        for ($i = 0, $j = $GLOBALS['TYPO3_DB']->sql_num_rows($result); $i < $j; $i++) {
-
-            list ($collections[]) = $GLOBALS['TYPO3_DB']->sql_fetch_row($result);
-
-        }
-
-        $metadata['collection'] = $collections;
-
-        // Get UID for owner.
-        $owner = !empty($metadata['owner'][0]) ? $metadata['owner'][0] : 'default';
-
-        $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-            'tx_dlf_libraries.uid AS uid',
-            'tx_dlf_libraries',
-            'tx_dlf_libraries.pid='.intval($pid).' AND tx_dlf_libraries.index_name='.$GLOBALS['TYPO3_DB']->fullQuoteStr($owner, 'tx_dlf_libraries').tx_dlf_helper::whereClause('tx_dlf_libraries'),
-            '',
-            '',
-            '1'
-        );
-
-        if ($GLOBALS['TYPO3_DB']->sql_num_rows($result)) {
-
-            list ($ownerUid) = $GLOBALS['TYPO3_DB']->sql_fetch_row($result);
-
-        } else {
-
-            // Insert new library.
-            $libNewUid = uniqid('NEW');
-
-            $libData['tx_dlf_libraries'][$libNewUid] = array (
-                'pid' => $pid,
-                'label' => $owner,
-                'index_name' => $owner,
-                'website' => '',
-                'contact' => '',
-                'image' => '',
-                'oai_label' => '',
-                'oai_base' => '',
-                'opac_label' => '',
-                'opac_base' => '',
-                'union_label' => '',
-                'union_base' => '',
-            );
-
-            $substUid = tx_dlf_helper::processDB($libData);
-
-            // Add new library's UID.
-            $ownerUid = $substUid[$libNewUid];
-
-            if (!defined('TYPO3_cliMode')) {
-
-                $message = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
-                    'TYPO3\\CMS\\Core\\Messaging\\FlashMessage',
-                    htmlspecialchars(sprintf(tx_dlf_helper::getLL('flash.newLibrary'), $owner, $ownerUid)),
-                    tx_dlf_helper::getLL('flash.attention', TRUE),
-                    \TYPO3\CMS\Core\Messaging\FlashMessage::INFO,
-                    TRUE
-                );
-
-                tx_dlf_helper::addMessage($message);
-
-            }
-
-        }
-
-        $metadata['owner'][0] = $ownerUid;
-
-        // Get UID of parent document.
-        $partof = 0;
-
+    protected function saveParentDocumentIfExists()
+    {
         // Get the closest ancestor of the current document which has a MPTR child.
         $parentMptr = $this->mets->xpath('./mets:structMap[@TYPE="LOGICAL"]//mets:div[@ID="'.$this->_getToplevelId().'"]/ancestor::mets:div[./mets:mptr][1]/mets:mptr');
-
+        
         if (!empty($parentMptr[0])) {
-
+            
             $parentLocation = (string) $parentMptr[0]->attributes('http://www.w3.org/1999/xlink')->href;
-
+            
             if ($parentLocation != $this->location) {
-
+                
                 $parentDoc = & tx_dlf_document::getInstance($parentLocation, $pid);
-
+                
                 if ($parentDoc->ready) {
-
+                    
                     if ($parentDoc->pid != $pid) {
-
+                        
                         $parentDoc->save($pid, $core);
-
+                        
                     }
-
+                    
                     $partof = $parentDoc->uid;
-
+                    
                 }
-
+                
             }
-
+            
         }
-
-        // Use the date of publication or title as alternative sorting metric for parts of multi-part works.
-        if (!empty($partof)) {
-
-            if (empty($metadata['volume'][0]) && !empty($metadata['year'][0])) {
-
-                $metadata['volume'] = $metadata['year'];
-
-            }
-
-            if (empty($metadata['volume_sorting'][0])) {
-
-                if (!empty($metadata['year_sorting'][0])) {
-
-                    $metadata['volume_sorting'][0] = $metadata['year_sorting'][0];
-
-                } elseif (!empty($metadata['year'][0])) {
-
-                    $metadata['volume_sorting'][0] = $metadata['year'][0];
-
-                }
-
-            }
-
-            // If volume_sorting is still empty, try to use title_sorting finally (workaround for newspapers)
-            if (empty($metadata['volume_sorting'][0])) {
-
-                if (!empty($metadata['title_sorting'][0])) {
-
-                    $metadata['volume_sorting'][0] = $metadata['title_sorting'][0];
-
-                }
-            }
-
-        }
-
-        // Get metadata for lists and sorting.
-        $listed = array ();
-
-        $sortable = array ();
-
-        $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-            'tx_dlf_metadata.index_name AS index_name,tx_dlf_metadata.is_listed AS is_listed,tx_dlf_metadata.is_sortable AS is_sortable',
-            'tx_dlf_metadata',
-            '(tx_dlf_metadata.is_listed=1 OR tx_dlf_metadata.is_sortable=1) AND tx_dlf_metadata.pid='.intval($pid).tx_dlf_helper::whereClause('tx_dlf_metadata'),
-            '',
-            '',
-            ''
-        );
-
-        while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
-
-            if (!empty($metadata[$resArray['index_name']])) {
-
-                if ($resArray['is_listed']) {
-
-                    $listed[$resArray['index_name']] = $metadata[$resArray['index_name']];
-
-                }
-
-                if ($resArray['is_sortable']) {
-
-                    $sortable[$resArray['index_name']] = $metadata[$resArray['index_name']][0];
-
-                }
-
-            }
-
-        }
-
-        // Fill data array.
-        $data['tx_dlf_documents'][$this->uid] = array (
-            'pid' => $pid,
-            $GLOBALS['TCA']['tx_dlf_documents']['ctrl']['enablecolumns']['starttime'] => 0,
-            $GLOBALS['TCA']['tx_dlf_documents']['ctrl']['enablecolumns']['endtime'] => 0,
-            'prod_id' => $metadata['prod_id'][0],
-            'location' => $this->location,
-            'record_id' => $metadata['record_id'][0],
-            'opac_id' => $metadata['opac_id'][0],
-            'union_id' => $metadata['union_id'][0],
-            'urn' => $metadata['urn'][0],
-            'purl' => $metadata['purl'][0],
-            'title' => $metadata['title'][0],
-            'title_sorting' => $metadata['title_sorting'][0],
-            'author' => implode('; ', $metadata['author']),
-            'year' => implode('; ', $metadata['year']),
-            'place' => implode('; ', $metadata['place']),
-            'thumbnail' => $this->_getThumbnail(TRUE),
-            'metadata' => serialize($listed),
-            'metadata_sorting' => serialize($sortable),
-            'structure' => $metadata['type'][0],
-            'partof' => $partof,
-            'volume' => $metadata['volume'][0],
-            'volume_sorting' => $metadata['volume_sorting'][0],
-            'collections' => $metadata['collection'],
-            'owner' => $metadata['owner'][0],
-            'solrcore' => $core,
-            'status' => 0,
-        );
-
-        // Unhide hidden documents.
-        if (!empty($conf['unhideOnIndex'])) {
-
-            $data['tx_dlf_documents'][$this->uid][$GLOBALS['TCA']['tx_dlf_documents']['ctrl']['enablecolumns']['disabled']] = 0;
-
-        }
-
-        // Process data.
-        $newIds = tx_dlf_helper::processDB($data);
-
-        // Replace placeholder with actual UID.
-        if (strpos($this->uid, 'NEW') === 0) {
-
-            $this->uid = $newIds[$this->uid];
-
-            $this->pid = $pid;
-
-            $this->parentId = $partof;
-
-        }
-
-        if (!defined('TYPO3_cliMode')) {
-
-            $message = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
-                'TYPO3\\CMS\\Core\\Messaging\\FlashMessage',
-                htmlspecialchars(sprintf(tx_dlf_helper::getLL('flash.documentSaved'), $metadata['title'][0], $this->uid)),
-                tx_dlf_helper::getLL('flash.done', TRUE),
-                \TYPO3\CMS\Core\Messaging\FlashMessage::OK,
-                TRUE
-            );
-
-            tx_dlf_helper::addMessage($message);
-
-        }
-
-        // Add document to index.
-        if ($core) {
-
-            tx_dlf_indexing::add($this, $core);
-
-        } else {
-
-            if (TYPO3_DLOG) {
-
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->save('.$_pid.', '.$_core.')] Invalid UID "'.$core.'" for Solr core', self::$extKey, SYSLOG_SEVERITY_NOTICE);
-
-            }
-
-        }
-
-        return TRUE;
-
     }
 
     /**
@@ -1498,26 +1062,17 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
     }
 
-    /**
-     * This returns $this->hasFulltext via __get()
-     *
-     * @access	protected
-     *
-     * @return	boolean		Are there any fulltext files available?
-     */
-    protected function _getHasFulltext() {
-
+    protected function ensureHasFulltextIsLoaded()
+    {
         // Are the fileGrps already loaded?
         if (!$this->fileGrpsLoaded) {
-
+            
             $this->_getFileGrps();
-
+            
         }
-
-        return $this->hasFulltext;
-
+        
     }
-
+    
     /**
      * This returns $this->location via __get()
      *
@@ -1531,52 +1086,18 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
     }
 
-    /**
-     * This builds an array of the document's metadata
-     *
-     * @access	protected
-     *
-     * @return	array		Array of metadata with their corresponding logical structure node ID as key
-     */
-    protected function _getMetadataArray() {
-
-        // Set metadata definitions' PID.
-        $cPid = ($this->cPid ? $this->cPid : $this->pid);
-
-        if (!$cPid) {
-
-            if (TYPO3_DLOG) {
-
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->getMetadataArray()] Invalid PID "'.$cPid.'" for metadata definitions', self::$extKey, SYSLOG_SEVERITY_ERROR);
-
+    protected function prepareMetadataArray($cPid)
+    {
+        // Get all logical structure nodes with metadata.
+        if (($ids = $this->mets->xpath('./mets:structMap[@TYPE="LOGICAL"]//mets:div[@DMDID]/@ID'))) {
+            
+            foreach ($ids as $id) {
+                
+                $this->metadataArray[(string) $id] = $this->getMetadata((string) $id, $cPid);
+                
             }
-
-            return array ();
-
+            
         }
-
-        if (!$this->metadataArrayLoaded || $this->metadataArray[0] != $cPid) {
-
-            // Get all logical structure nodes with metadata.
-            if (($ids = $this->mets->xpath('./mets:structMap[@TYPE="LOGICAL"]//mets:div[@DMDID]/@ID'))) {
-
-                foreach ($ids as $id) {
-
-                    $this->metadataArray[(string) $id] = $this->getMetadata((string) $id, $cPid);
-
-                }
-
-            }
-
-            // Set current PID for metadata definitions.
-            $this->metadataArray[0] = $cPid;
-
-            $this->metadataArrayLoaded = TRUE;
-
-        }
-
-        return $this->metadataArray;
-
     }
 
     /**

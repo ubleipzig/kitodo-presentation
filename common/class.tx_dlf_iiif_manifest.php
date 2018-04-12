@@ -58,6 +58,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             // Try to load IIIF manifest.
             if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location) && $this->load($location)) {
+                
+                if ($this->iiif !== null) {
+                    
+                    $this->recordId = $this->iiif->getId(); 
+                    
+                }
 
                 // TODO check for possibly already stored recordId
                 
@@ -104,7 +110,9 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             // Load iiif resource file if necessary...
             if ($this->iiif === NULL) {
+                
                 $this->load($this->location);
+                
             }
             
             // Do we have a IIIF resource object now?
@@ -218,8 +226,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 // TODO from configurable metadata; translation?
                 $this->physicalStructureInfo[$physSeq[0]]['orderlabel'] = $sequence->getDefaultLabel();
                 
-                // TODO check nescessity
-                $this->physicalStructureInfo[$physSeq[0]]['type'] = null;
+                // TODO Replace with configurable metadata (tx_dlf_structures). Check if it can be read from the metadata. 
+                $this->physicalStructureInfo[$physSeq[0]]['type'] = 'unknown';
                 
                 // TODO check nescessity
                 $this->physicalStructureInfo[$physSeq[0]]['contentIds'] = null;
@@ -395,6 +403,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     
     protected static function &getIiifInstance($uid, $pid = 0, $forceReload = FALSE) {
         
+        if (!class_exists('\\iiif\\model\\resources\\IiifReader', false)) {
+            
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
+            
+        }
+        
         // Sanitize input.
         $pid = max(intval($pid), 0);
         
@@ -429,7 +443,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             if ($this->iiif instanceof Manifest && $this->iiif->getStructures()!=null) {
                 
-                $logUnits = $this->iiif->getStructures();
+                $logUnits = array_merge($logUnits, $this->iiif->getStructures());
                 
             }
         }
@@ -486,7 +500,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         $details['pagination'] = '';
         
-        $details['type'] = '';
+        // FIXME Document cannot be saved without type. 'unknown' ist just a workaround.
+        $details['type'] = 'unknown';
         
         $dummy = array();
         
@@ -649,7 +664,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             // TODO multiple labels, translations; configurable
             $metadata['title'][] = $this->iiif->getDefaultLabel();
             
+            $metadata['document_format'][] = 'IIIF';
+            
         }
+        
+        // FIXME
+        $metadata['type'][] = 'unknown';
         
         if ($this->iiif instanceof Manifest) {
             
@@ -671,7 +691,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $metadata['union_id'][] = $this->iiif->getMetadataForLabel('Source PPN (SWB)');
             
-            $metadata['collection'][] = $this->iiif->getMetadataForLabel('Collection');
+            // $metadata['collection'][] = $this->iiif->getMetadataForLabel('Collection');
             
             $metadata['owner'][] = $this->iiif->getMetadataForLabel('Owner');
             
@@ -786,6 +806,13 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         // do nothing - METS specific
         
     }
+    
+    protected function saveParentDocumentIfExists()
+    {
+        // Do nothing
+        // TODO Check if Collection doc needs to be saved
+    }
+    
     /**
      * {@inheritDoc}
      * @see tx_dlf_document::init()
@@ -827,7 +854,18 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         return array ('uid', 'pid', 'recordId', 'parentId', 'asJson');
     }
-
+    
+    protected function prepareMetadataArray($cPid)
+    {
+        $id = $this->iiif->getId();
+        $this->metadataArray[(string) $id] = $this->getMetadata((string) $id, $cPid);
+    }
+    
+    protected function ensureHasFulltextIsLoaded()
+    {
+        // TODO implement
+    }
+    
     protected function _getToplevelId()
     {
         if (empty($this->toplevelId)) {

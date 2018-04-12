@@ -306,7 +306,7 @@ abstract class tx_dlf_document {
                 
             }
             $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-                'tx_dlf_documents.uid AS uid,tx_dlf_documents.pid AS pid,tx_dlf_documents.record_id AS record_id,tx_dlf_documents.partof AS partof,tx_dlf_documents.thumbnail AS thumbnail,tx_dlf_documents.location AS location',
+                'tx_dlf_documents.location AS location,tx_dlf_documents.document_format AS document_format',
                 'tx_dlf_documents',
                 $whereClause,
                 '',
@@ -315,8 +315,21 @@ abstract class tx_dlf_document {
                 );
             
             if ($GLOBALS['TYPO3_DB']->sql_num_rows($result) > 0) {
-                // TODO At the moment it's okay to assume that this is a METS document. Change this as soon as IIIF manifests can be saved. 
-                return 'METS';
+                
+                for ($i = 0, $j = $GLOBALS['TYPO3_DB']->sql_num_rows($result); $i < $j; $i++) {
+                    
+                    $resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result);
+
+                    $documentFormat = $resArray['document_format'];
+                    
+                    if ($documentFormat == 'METS' || $documentFormat == 'IIIF') {
+                        
+                        return $documentFormat;
+                        
+                    }
+                    
+                }
+                
             }
             
         } else {
@@ -1116,35 +1129,8 @@ abstract class tx_dlf_document {
         // Get UID of parent document.
         $partof = 0;
 
-        // TODO METS specific; delegate to tx_dlf_mets_document
+        $this->saveParentDocumentIfExists();
         
-        // Get the closest ancestor of the current document which has a MPTR child.
-        $parentMptr = $this->mets->xpath('./mets:structMap[@TYPE="LOGICAL"]//mets:div[@ID="'.$this->_getToplevelId().'"]/ancestor::mets:div[./mets:mptr][1]/mets:mptr');
-
-        if (!empty($parentMptr[0])) {
-
-            $parentLocation = (string) $parentMptr[0]->attributes('http://www.w3.org/1999/xlink')->href;
-
-            if ($parentLocation != $this->location) {
-
-                $parentDoc = & tx_dlf_document::getInstance($parentLocation, $pid);
-
-                if ($parentDoc->ready) {
-
-                    if ($parentDoc->pid != $pid) {
-
-                        $parentDoc->save($pid, $core);
-
-                    }
-
-                    $partof = $parentDoc->uid;
-
-                }
-
-            }
-
-        }
-
         // Use the date of publication or title as alternative sorting metric for parts of multi-part works.
         if (!empty($partof)) {
 
@@ -1242,6 +1228,7 @@ abstract class tx_dlf_document {
             'owner' => $metadata['owner'][0],
             'solrcore' => $core,
             'status' => 0,
+            'document_format' => $metadata['document_format'][0],
         );
 
         // Unhide hidden documents.
@@ -1297,6 +1284,8 @@ abstract class tx_dlf_document {
         return TRUE;
 
     }
+    
+    protected abstract function saveParentDocumentIfExists();
 
     /**
      * This returns $this->cPid via __get()
@@ -1311,6 +1300,8 @@ abstract class tx_dlf_document {
 
     }
 
+    protected abstract function ensureHasFulltextIsLoaded();
+    
     /**
      * This returns $this->hasFulltext via __get()
      *
@@ -1320,12 +1311,7 @@ abstract class tx_dlf_document {
      */
     protected function _getHasFulltext() {
 
-        // Are the fileGrps already loaded?
-        if (!$this->fileGrpsLoaded) {
-
-            $this->_getFileGrps();
-
-        }
+        $this->ensureHasFulltextIsLoaded();
 
         return $this->hasFulltext;
 
@@ -1344,6 +1330,8 @@ abstract class tx_dlf_document {
 
     }
 
+    protected abstract function prepareMetadataArray($cPid);
+    
     /**
      * This builds an array of the document's metadata
      *
@@ -1370,16 +1358,7 @@ abstract class tx_dlf_document {
 
         if (!$this->metadataArrayLoaded || $this->metadataArray[0] != $cPid) {
 
-            // Get all logical structure nodes with metadata.
-            if (($ids = $this->mets->xpath('./mets:structMap[@TYPE="LOGICAL"]//mets:div[@DMDID]/@ID'))) {
-
-                foreach ($ids as $id) {
-
-                    $this->metadataArray[(string) $id] = $this->getMetadata((string) $id, $cPid);
-
-                }
-
-            }
+            $this->prepareMetadataArray($cPid);
 
             // Set current PID for metadata definitions.
             $this->metadataArray[0] = $cPid;
