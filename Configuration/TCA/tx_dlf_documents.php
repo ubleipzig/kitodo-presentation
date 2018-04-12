@@ -33,7 +33,7 @@ return array (
         'fe_admin_fieldList' => '',
     ),
     'interface' => array (
-        'showRecordFieldList' => 'title,volume,author,year,place,uid,prod_id,location,oai_id,opac_id,union_id,urn',
+        'showRecordFieldList' => 'title,volume,author,year,place,uid,prod_id,location,oai_id,opac_id,union_id,urn,document_format',
         'maxDBListItems' => 25,
         'maxSingleDBListItems' => 50,
     ),
@@ -323,6 +323,21 @@ return array (
                 'minitems' => 1,
                 'maxitems' => 1,
                 'default' => 0,
+            ),
+        ),
+        'document_format' => array (
+            'exclude' => 1,
+            'label' => 'METS or IIIF',
+            'config' => array (
+                'type' => 'select',
+                'renderType' => 'selectSingle',
+                'items' => array (
+                    array ('METS', 'METS'),
+                    array ('IIIF', 'IIIF'),
+                ),
+                'size' => 1,
+                'minitems' => 1,
+                'maxitems' => 1,
             ),
         ),
     ),
