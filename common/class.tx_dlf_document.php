@@ -39,7 +39,6 @@ abstract class tx_dlf_document {
      */
     public static $extKey = 'dlf';
 
-    // TODO unsure whether to keep this in abstract class
     /**
      * Are there any fulltext files available?
      *
@@ -48,7 +47,6 @@ abstract class tx_dlf_document {
      */
     protected $hasFulltext = FALSE;
 
-    // TODO unsure whether to keep this in abstract class
     /**
      * Last searched logical and physical page
      *
@@ -65,7 +63,6 @@ abstract class tx_dlf_document {
      */
     protected $location = '';
 
-    // TODO unsure whether to keep this in abstract class
     /**
      * This holds the logical units
      *
@@ -74,7 +71,6 @@ abstract class tx_dlf_document {
      */
     protected $logicalUnits = array ();
 
-    // TODO unsure whether to keep this in abstract class
     /**
      * This holds the documents' parsed metadata array with their corresponding structMap//div's ID as array key
      *
@@ -83,7 +79,6 @@ abstract class tx_dlf_document {
      */
     protected $metadataArray = array ();
 
-    // TODO unsure whether to keep this in abstract class
     /**
      * Is the metadata array loaded?
      * @see $metadataArray
@@ -101,7 +96,6 @@ abstract class tx_dlf_document {
      */
     protected $numPages = 0;
 
-    // TODO unsure whether to keep this in abstract class
     /**
      * This holds the UID of the parent document or zero if not multi-volumed
      *
@@ -176,7 +170,6 @@ abstract class tx_dlf_document {
      */
     protected $ready = FALSE;
 
-    // FIXME A suitable record identifier for the IIIF implementation has to be found. The manifest id could be used, but as it is a URL, the metadata currently would never be loaded only from the database.    
     /**
      * The METS file's record identifier
      *
@@ -1551,7 +1544,7 @@ abstract class tx_dlf_document {
             // Load extension configuration.
             $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
 
-            // TODO METS-specific; delegate
+            // TODO METS-specific? delegate if necessary
             if (empty($extConf['fileGrpThumbs'])) {
 
                 if (TYPO3_DLOG) {

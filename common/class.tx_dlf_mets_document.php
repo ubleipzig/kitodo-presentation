@@ -111,15 +111,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
      */
     protected $mets;
 
-    // TODO unsure whether to keep this in abstract class
-    /**
-     * This holds the UID of the parent document or zero if not multi-volumed
-     *
-     * @var	integer
-     * @access protected
-     */
-    protected $parentId = 0;
-
     /**
      * Is the document instantiated successfully?
      *
@@ -144,14 +135,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
      * @access protected
      */
     protected $rootIdLoaded = FALSE;
-
-    /**
-     * This holds the toplevel structure's @ID
-     *
-     * @var	string
-     * @access protected
-     */
-    protected $toplevelId = '';
 
     /**
      * This holds the whole XML file as SimpleXMLElement object
@@ -479,7 +462,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
         }
 
-        // TODO initialize metadata in absract class
+        // TODO initialize metadata in abstract class
         // Initialize metadata array with empty values.
         $metadata = array (
             'title' => array (),

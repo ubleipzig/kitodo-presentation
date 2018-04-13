@@ -43,8 +43,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     {
         // FIXME avoid code duplications - extract common parts withtx_dlf_mets_document
         
-        // TODO 
-        
         // Prepare to check database for the requested document.
         if (\TYPO3\CMS\Core\Utility\MathUtility::canBeInterpretedAsInteger($uid)) {
             
@@ -395,9 +393,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
         }
         
-        
-        // TODO decide whether to use the given format (if existent) or 'application/vnd.kitodo.iiif'
-        
         return $format;
     }
     
@@ -630,7 +625,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     public function getMetadata($id, $cPid = 0)
     {
-        // TODO load metadata configuration from
+        // TODO load metadata configuration from db
         
         if (!empty($this->metadataArray[$id]) && $this->metadataArray[0] == $cPid) {
             
