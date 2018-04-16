@@ -224,7 +224,7 @@
 			<label index="update.documentAddFormat">Add document format column...</label>
 			<label index="update.documentAddFormatOkay">...successfully completed!</label>
 			<label index="update.documentAddFormatNotOkay">...incomplete! Please add column document_format for table tx_dlf_document manually.</label>
-			<label index="update.documentSetFormatForOldEntries">Set document format for old entries to 'METS'...</label>
+			<label index="update.documentSetFormatForOldEntries">Set document format for existing entries to 'METS'...</label>
 			<label index="update.documentSetFormatForOldEntriesOkay">...successfully completed!</label>
 			<label index="update.documentSetFormatForOldEntriesNotOkay">...incomplete! Please set missing tx_dlf_document.document_format values to 'METS'.</label>
 
@@ -439,6 +439,9 @@
 			<label index="update.documentAddFormat">Füge Format-Spalte zu Dokument-Tabelle hinzu...</label>
 			<label index="update.documentAddFormatOkay">...erfolgreich beendet!</label>
 			<label index="update.documentAddFormatNotOkay">...abgebrochen! Bitte fügen Sie die Spalte document_format manuell zur Tabelle table tx_dlf_document hinzu.</label>
+			<label index="update.documentSetFormatForOldEntries">Setze das Format für bestehende Dokumente auf 'METS'...</label>
+			<label index="update.documentSetFormatForOldEntriesOkay">...erfolgreich beendet!</label>
+			<label index="update.documentSetFormatForOldEntriesNotOkay">...abgebrochen! Bitte in der Tabelle tx_dlf_document.document_format 'METS'.</label>
 			
 		</languageKey>
 	</data>
