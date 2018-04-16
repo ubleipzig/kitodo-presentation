@@ -481,8 +481,12 @@ final class tx_dlf_mets_document extends tx_dlf_document {
             'volume_sorting' => array (),
             'collection' => array (),
             'owner' => array (),
+            'document_format' => array(),
+            
         );
-
+        
+        $metadata['document_format'][] = 'METS';
+        
         // Get the logical structure node's DMDID.
         if (!empty($this->logicalUnits[$id])) {
 
@@ -703,8 +707,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
         $titledata = $this->getMetadata($this->_getToplevelId(), $cPid);
         
-        $titledata['document_format'] = 'METS'; 
-
         // Set record identifier for METS file if not present.
         if (is_array($titledata) && array_key_exists('record_id', $titledata)) {
 

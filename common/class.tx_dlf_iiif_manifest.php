@@ -659,11 +659,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             // TODO multiple labels, translations; configurable
             $metadata['title'][] = $this->iiif->getDefaultLabel();
             
-            $metadata['document_format'][] = 'IIIF';
-            
         }
         
-        // FIXME
+        $metadata['document_format'][] = 'IIIF';
+        
+        // FIXME documents cannot be saved without structure types, but IIIF manifests have no means of declaration for that
         $metadata['type'][] = 'unknown';
         
         if ($this->iiif instanceof Manifest) {
