@@ -77,6 +77,7 @@ class tx_dlf_metadata extends tx_dlf_plugin {
 
                 foreach ($this->doc->smLinks['p2l'][$this->doc->physicalStructure[$this->piVars['page']]] as $logId) {
 
+                    // TODO Move METS specific part somewhere else
                     $count = count($this->doc->mets->xpath('./mets:structMap[@TYPE="LOGICAL"]//mets:div[@ID="'.$logId.'"]/ancestor::*'));
 
                     $ids[$count][] = $logId;
