@@ -91,6 +91,8 @@ class tx_dlf_doctype {
         switch ($toc[0]['type']) {
 
             case 'newspaper':
+                
+                // TODO Delegate to METS document method. (Not relevant for IIIF as long as structure type is not implemented.) 
 
                 $nodes_year = $this->doc->mets->xpath('./mets:structMap[@TYPE="LOGICAL"]/mets:div[@TYPE="newspaper"]/mets:div[@TYPE="year"]');
 

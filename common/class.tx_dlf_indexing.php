@@ -717,6 +717,7 @@ class tx_dlf_indexing {
         // Read extension configuration.
         $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
 
+        // TODO: METS/ALTO-specific
         if (!empty($physicalUnit['files'][$extConf['fileGrpFulltext']])) {
 
             $file = $doc->getFileLocation($physicalUnit['files'][$extConf['fileGrpFulltext']]);

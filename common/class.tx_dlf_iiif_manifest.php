@@ -10,6 +10,8 @@ use iiif\model\resources\Collection;
 use iiif\model\resources\ContentResource;
 use iiif\model\resources\Manifest;
 use iiif\model\resources\Range;
+use iiif\model\resources\AnnotationList;
+use iiif\model\vocabulary\Motivation;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -27,6 +29,10 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      * @var AbstractIiifResource
      */
     protected $iiif;
+    
+    protected $hasFulltextSet = false;
+    
+    protected $fulltext = null;
 
     /**
      * The extension key
@@ -858,7 +864,57 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     
     protected function ensureHasFulltextIsLoaded()
     {
-        // TODO implement
+        if (!$this->hasFulltextSet && $this->iiif instanceof Manifest)
+        {
+            $manifest = $this->iiif;
+            
+            /* @var $manifest \iiif\model\resources\Manifest */
+            
+            $canvases = $manifest->getSequences()[0]->getCanvases();
+            
+            $fulltext = "";
+            
+            foreach ($canvases as $canvas) {
+                
+                if ($canvas->getOtherContent() != null) {
+                    
+                    foreach ($canvas->getOtherContent() as $annotationList) {
+                        
+                        if ($annotationList->getResources() != null) {
+                            
+                            foreach ($annotationList->getResources() as $annotation) {
+                                
+                                /* @var  $annotation \iiif\model\resources\Annotation */
+                                if ($annotation->getMotivation() == Motivation::PAINTING && 
+                                    $annotation->getResource() != null &&
+                                    $annotation->getResource()->getFormat() == "text/plain" && 
+                                    $annotation->getResource()->getChars() != null) {
+                                    
+                                    $fulltext .= (strlen($fulltext) == 0 ? "" : " ").$annotation->getResource()->getChars();
+                                    
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    
+                }
+                
+            }
+            
+            if (strlen($fulltext) > 0) {
+                
+                $this->hasFulltext = true;
+                
+                $this->fulltext = $fulltext;
+                
+            }
+            
+            $this->hasFulltextSet = true;
+            
+        }
+        
     }
     
     protected function _getToplevelId()
