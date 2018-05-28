@@ -1293,7 +1293,7 @@ abstract class tx_dlf_document {
 
     }
 
-    protected abstract function ensureHasFulltextIsLoaded();
+    protected abstract function ensureHasFulltextIsSet();
     
     /**
      * This returns $this->hasFulltext via __get()
@@ -1304,7 +1304,7 @@ abstract class tx_dlf_document {
      */
     protected function _getHasFulltext() {
 
-        $this->ensureHasFulltextIsLoaded();
+        $this->ensureHasFulltextIsSet();
 
         return $this->hasFulltext;
 

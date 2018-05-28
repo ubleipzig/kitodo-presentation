@@ -1047,7 +1047,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
     }
 
-    protected function ensureHasFulltextIsLoaded()
+    protected function ensureHasFulltextIsSet()
     {
         // Are the fileGrps already loaded?
         if (!$this->fileGrpsLoaded) {

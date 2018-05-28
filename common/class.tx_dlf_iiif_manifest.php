@@ -247,6 +247,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     
                     $fileUses = $this->getUseGroups('fileGrps');
                     
+                    $fileUseFulltext = $this->getUseGroups('fileGrpFulltext');
+                    
                     $serviceProfileCache = [];
                     
                     foreach ($sequence->getCanvases() as $canvas) {
@@ -280,6 +282,36 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             }
                         }
                         
+                        $this->ensureHasFulltextIsSet();
+                        
+                        if ($this->hasFulltext && isset($fileUseFulltext) && $canvas->getOtherContent() != null) {
+                            
+                            foreach ($canvas->getOtherContent() as $annotationList) {
+                                
+                                if ($annotationList->getResources() != null) {
+                                    
+                                    foreach ($annotationList->getResources() as $annotation) {
+                                        
+                                        /* @var  $annotation \iiif\model\resources\Annotation */
+                                        if ($annotation->getMotivation() == Motivation::PAINTING &&
+                                            $annotation->getResource() != null &&
+                                            $annotation->getResource()->getFormat() == "text/plain" &&
+                                            $annotation->getResource()->getChars() != null) {
+
+                                            $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseFulltext] = $annotationList->getId();
+                                            
+                                            break;
+                                                
+                                        }
+                                         
+                                    }
+                                    
+                                }
+                                
+                            }
+                            
+                        }
+                        
                         // populate structural metadata info
                         $elements[$canvasOrder] = $canvas->getId();
                         
@@ -296,6 +328,20 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         $this->physicalStructureInfo[$elements[$canvasOrder]]['type']='page';
                         
                         $this->physicalStructureInfo[$elements[$canvasOrder]]['contentIds']=null;
+                        
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'] = null;
+                        
+                        if ($canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
+                            
+                            $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'] = array();
+                            
+                            foreach ($canvas->getOtherContent() as $annotationList) {
+                                
+                                $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'][] = $annotationList->getId();
+                                
+                            }
+                            
+                        }
                         
                         if (isset($fileUses)) {
                             
@@ -862,7 +908,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         $this->metadataArray[(string) $id] = $this->getMetadata((string) $id, $cPid);
     }
     
-    protected function ensureHasFulltextIsLoaded()
+    protected function ensureHasFulltextIsSet()
     {
         if (!$this->hasFulltextSet && $this->iiif instanceof Manifest)
         {
@@ -871,8 +917,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             /* @var $manifest \iiif\model\resources\Manifest */
             
             $canvases = $manifest->getSequences()[0]->getCanvases();
-            
-            $fulltext = "";
             
             foreach ($canvases as $canvas) {
                 
@@ -890,9 +934,14 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                                     $annotation->getResource()->getFormat() == "text/plain" && 
                                     $annotation->getResource()->getChars() != null) {
                                     
-                                    $fulltext .= (strlen($fulltext) == 0 ? "" : " ").$annotation->getResource()->getChars();
+                                    $this->hasFulltextSet = true;
                                     
+                                    $this->hasFulltext = true;
+                                    
+                                    return;
+                                        
                                 }
+                            
                             }
                             
                         }
@@ -900,14 +949,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     }
                     
                 }
-                
-            }
-            
-            if (strlen($fulltext) > 0) {
-                
-                $this->hasFulltext = true;
-                
-                $this->fulltext = $fulltext;
                 
             }
             
@@ -958,9 +999,14 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         }
     
     }
-        
-    
 
+    /**
+     * @return AbstractIiifResource
+     */
+    public function getIiif()
+    {
+        return $this->iiif;
+    }
 
 }
 

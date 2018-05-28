@@ -85,10 +85,17 @@ class tx_dlf_toolsFulltext extends tx_dlf_plugin {
         }
 
         $fullTextFile = $this->doc->physicalStructureInfo[$this->doc->physicalStructure[$this->piVars['page']]]['files'][$this->conf['fileGrpFulltext']];
-
+        
+        $annotationLists = $this->doc->physicalStructureInfo[$this->doc->physicalStructure[$this->piVars['page']]]['annotationLists'];
+        
         if (!empty($fullTextFile)) {
             $markerArray['###FULLTEXT_SELECT###'] = '<a class="select switchoff" id="tx-dlf-tools-fulltext" title="" data-dic="fulltext-on:'
                     .$this->pi_getLL('fulltext-on', '', TRUE).';fulltext-off:'
+                    .$this->pi_getLL('fulltext-off', '', TRUE).'">&nbsp;</a>';
+        } elseif ($annotationLists != null && sizeof($annotationLists)>0) {
+            // TODO unify or keep this separated?
+            $markerArray['###FULLTEXT_SELECT###'] = '<a class="select switchoff" id="tx-dlf-tools-fulltext-anno" title="" data-dic="fulltext-anno-on:'
+                .$this->pi_getLL('fulltext-on', '', TRUE).';fulltext-anno-off:'
                     .$this->pi_getLL('fulltext-off', '', TRUE).'">&nbsp;</a>';
         } else {
             $markerArray['###FULLTEXT_SELECT###'] = '<span class="no-fulltext">'.$this->pi_getLL('fulltext-not-available', '', TRUE).'</span>';

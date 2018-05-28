@@ -1,4 +1,7 @@
 <?php
+use iiif\model\resources\Manifest;
+use iiif\model\vocabulary\Motivation;
+
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -44,6 +47,8 @@ class tx_dlf_pageview extends tx_dlf_plugin {
      * @access protected
      */
     protected $fulltexts = array ();
+    
+    protected $annotationLists = array();
 
     /**
      * Adds Viewer javascript
@@ -90,6 +95,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
 						div: "'.$this->conf['elementId'].'",
 						images: '.json_encode($this->images).',
 						fulltexts: '.json_encode($this->fulltexts).',
+                        annotationLists: '.json_encode($this->annotationLists).',
 						useInternalProxy: '.($this->conf['useInternalProxy'] ? 1 : 0).'
 					})
 				}
@@ -317,6 +323,65 @@ class tx_dlf_pageview extends tx_dlf_plugin {
         return $fulltext;
 
     }
+    
+    public function getAnnotationLists($page)
+    {
+        if ($this->doc instanceof tx_dlf_iiif_manifest) {
+            
+            $canvasId = $this->doc->physicalStructure[$page];
+            
+            $iiif = $this->doc->getIiif();
+            
+            if ($iiif instanceof Manifest) {
+                
+                $canvas = $iiif->getContainedResourceById($canvasId);
+                
+                /* @var $canvas \iiif\model\resources\Canvas */
+                
+                if ($canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
+                    
+                    $result = array();
+                    
+                    foreach ($canvas->getOtherContent() as $annotationList) {
+                        
+                        if ($annotationList->getResources() != null) {
+                            
+                            foreach ($annotationList->getResources() as $annotation) {
+                                
+                                /* @var $annotation \iiif\model\resources\Annotation */
+                                
+                                if ($annotation->getMotivation() == Motivation::PAINTING
+                                    && $annotation->getResource() != null 
+                                    && $annotation->getResource()->getFormat() == "text/plain"
+                                    && $annotation->getResource()->getChars() != null) {
+                                    
+                                        $result[] = $annotationList->getId();
+                                        
+                                        break;
+                                    
+                                }
+                                
+                            }
+                            
+                        }
+                        
+                    }
+                    
+                    if (sizeof($annotationList)>0) {
+                        
+                        return $result;
+                        
+                    }
+                        
+                }
+                
+            }
+            
+        }
+        
+        return array();
+        
+    }
 
     /**
      * The main method of the PlugIn
@@ -380,12 +445,13 @@ class tx_dlf_pageview extends tx_dlf_plugin {
         // Get image data.
         $this->images[0] = $this->getImage($this->piVars['page']);
         $this->fulltexts[0] = $this->getFulltext($this->piVars['page']);
+        $this->annotationLists[0] = $this->getAnnotationLists($this->piVars['page']);
 
         if ($this->piVars['double'] && $this->piVars['page'] < $this->doc->numPages) {
 
             $this->images[1] = $this->getImage($this->piVars['page'] + 1);
             $this->fulltexts[1] = $this->getFulltext($this->piVars['page'] + 1);
-
+            $this->annotationLists[1] = $this->getAnnotationLists($this->piVars['page'] + 1);
         }
 
         // Get the controls for the map.
