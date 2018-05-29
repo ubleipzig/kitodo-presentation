@@ -338,7 +338,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                 
                 /* @var $canvas \iiif\model\resources\Canvas */
                 
-                if ($canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
+                if ($canvas!=null && $canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
                     
                     $result = array();
                     
