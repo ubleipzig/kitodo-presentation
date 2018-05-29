@@ -910,7 +910,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     
     protected function ensureHasFulltextIsSet()
     {
-        if (!$this->hasFulltextSet && $this->iiif instanceof Manifest)
+        if (false && !$this->hasFulltextSet && $this->iiif instanceof Manifest)
         {
             $manifest = $this->iiif;
             

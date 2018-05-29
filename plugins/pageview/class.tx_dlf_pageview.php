@@ -326,7 +326,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
     
     public function getAnnotationLists($page)
     {
-        if ($this->doc instanceof tx_dlf_iiif_manifest) {
+        if (false && $this->doc instanceof tx_dlf_iiif_manifest) {
             
             $canvasId = $this->doc->physicalStructure[$page];
             
