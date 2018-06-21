@@ -12,6 +12,7 @@ use iiif\model\resources\Manifest;
 use iiif\model\resources\Range;
 use iiif\model\resources\AnnotationList;
 use iiif\model\vocabulary\Motivation;
+use iiif\model\vocabulary\Types;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -26,7 +27,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
 
     /**
      * 
-     * @var AbstractIiifResource
+     * @var Manifest
      */
     protected $iiif;
     
@@ -298,10 +299,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                                             $annotation->getResource()->getFormat() == "text/plain" &&
                                             $annotation->getResource()->getChars() != null) {
 
-                                            $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseFulltext] = $annotationList->getId();
+                                            $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseFulltext][] = $annotationList->getId();
+                                            
+                                            $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseFulltext][] = $annotationList->getId();
                                             
                                             break;
-                                                
+                                            
                                         }
                                          
                                     }
@@ -389,6 +392,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     public function getFileLocation($id)
     {
         
+        if ($id == null) return null;
+        
         $resource = $this->iiif->getContainedResourceById($id);
         
         if (isset($resource)) {
@@ -400,6 +405,10 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             } elseif ($resource instanceof ContentResource) {
                 
                 return $resource->getService()->getId();
+                
+            } elseif ($resource instanceof AnnotationList) {
+                
+                return $id;
                 
             }
             
@@ -859,6 +868,80 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         // Do nothing
         // TODO Check if Collection doc needs to be saved
     }
+
+    public function getRawText($id) {
+        
+        $rawText = '';
+        
+        // Get text from raw text array if available.
+        if (!empty($this->rawTextArray[$id])) {
+            
+            return $this->rawTextArray[$id];
+            
+        }
+        
+        $this->ensureHasFulltextIsSet();
+        
+        if ($this->hasFulltext) {
+            
+            // Load physical structure ...
+            $this->_getPhysicalStructure();
+            
+            // ... and extension configuration.
+            $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
+            
+            if (!empty($this->physicalStructureInfo[$id])) {
+                
+                // Get fulltext file.
+                $annotationListIds = $this->physicalStructureInfo[$id]['files'][$extConf['fileGrpFulltext']];
+                
+                $annotationTexts = array();
+                
+                foreach ($annotationListIds as $annotationListId) {
+                    
+                    $annotationList = $this->iiif->getContainedResourceById($annotationListId);
+                    
+                    /* @var $annotationList AnnotationList */
+                    foreach ($annotationList->getResources() as $annotation) {
+                        
+                        if ($annotation->getMotivation() == Motivation::PAINTING && $annotation->getResource()!=null &&
+                        $annotation->getResource()->getType() == Types::CNT_CONTENTASTEXT && $annotation->getResource()->getChars()!=null) {
+                            
+                            $xywhFragment = $annotation->getOn();
+                            
+                            if ($id == null || $id == '' || ($xywhFragment != null && $xywhFragment->getTargetUri() == $id)) {
+                                
+                                $annotationTexts[] = $annotation->getResource()->getChars();
+                                
+                            }
+                                
+                        }
+                            
+                    }
+                    
+                }
+                
+                $rawText = implode(' ', $annotationTexts);
+                
+            } else {
+                
+                if (TYPO3_DLOG) {
+                    
+                    \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->getRawText('.$id.')] Invalid structure node @ID "'.$id.'"'. self::$extKey, SYSLOG_SEVERITY_WARNING);
+                    
+                }
+                
+                return $rawText;
+                
+            }
+            
+            $this->rawTextArray[$id] = $rawText;
+            
+        }
+        
+        return $rawText;
+        
+    }
     
     /**
      * {@inheritDoc}
@@ -910,7 +993,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     
     protected function ensureHasFulltextIsSet()
     {
-        if (false && !$this->hasFulltextSet && $this->iiif instanceof Manifest)
+        if (!$this->hasFulltextSet && $this->iiif instanceof Manifest)
         {
             $manifest = $this->iiif;
             
@@ -929,6 +1012,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             foreach ($annotationList->getResources() as $annotation) {
                                 
                                 /* @var  $annotation \iiif\model\resources\Annotation */
+                                // Assume that a plain text annotation which is meant to be displayed to the user represents the full text
                                 if ($annotation->getMotivation() == Motivation::PAINTING && 
                                     $annotation->getResource() != null &&
                                     $annotation->getResource()->getFormat() == "text/plain" && 

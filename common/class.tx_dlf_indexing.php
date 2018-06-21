@@ -1,4 +1,6 @@
 <?php
+use iiif\model\resources\AnnotationList;
+
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -719,43 +721,55 @@ class tx_dlf_indexing {
 
         // TODO: METS/ALTO-specific
         if (!empty($physicalUnit['files'][$extConf['fileGrpFulltext']])) {
+            
+            if ($doc instanceof tx_dlf_iiif_manifest) {
+                
+                $annotationListIds = $physicalUnit['files'][$extConf['fileGrpFulltext']];
+                
+                //$jsonContent = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($file);
+                
+                //$annotationList = AnnotationList::fromJson($jsonContent);
+                
+            } else {
+                
+                $file = $doc->getFileLocation($physicalUnit['files'][$extConf['fileGrpFulltext']]);
 
-            $file = $doc->getFileLocation($physicalUnit['files'][$extConf['fileGrpFulltext']]);
+                // Load XML file.
+                if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($file)) {
 
-            // Load XML file.
-            if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($file)) {
-
-                // Set user-agent to identify self when fetching XML data.
-                if (!empty($extConf['useragent'])) {
-
-                    @ini_set('user_agent', $extConf['useragent']);
-
-                }
-
-                // Turn off libxml's error logging.
-                $libxmlErrors = libxml_use_internal_errors(TRUE);
-
-                // disable entity loading
-                $previousValueOfEntityLoader = libxml_disable_entity_loader(TRUE);
-
-                // Load XML from file.
-                $xml = simplexml_load_string(\TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($file));
-
-                // reset entity loader setting
-                libxml_disable_entity_loader($previousValueOfEntityLoader);
-
-                // Reset libxml's error logging.
-                libxml_use_internal_errors($libxmlErrors);
-
-                if ($xml === FALSE) {
-
+                    // Set user-agent to identify self when fetching XML data.
+                    if (!empty($extConf['useragent'])) {
+    
+                        @ini_set('user_agent', $extConf['useragent']);
+    
+                    }
+                    
+                    // Turn off libxml's error logging.
+                    $libxmlErrors = libxml_use_internal_errors(TRUE);
+                    
+                    // disable entity loading
+                    $previousValueOfEntityLoader = libxml_disable_entity_loader(TRUE);
+                    
+                    // Load XML from file.
+                    $xml = simplexml_load_string(\TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($file));
+                    
+                    // reset entity loader setting
+                    libxml_disable_entity_loader($previousValueOfEntityLoader);
+                    
+                    // Reset libxml's error logging.
+                    libxml_use_internal_errors($libxmlErrors);
+                    
+                    if ($xml === FALSE) {
+                        
+                        return 1;
+                        
+                    }
+                    
+                } else {
+    
                     return 1;
 
                 }
-
-            } else {
-
-                return 1;
 
             }
 
