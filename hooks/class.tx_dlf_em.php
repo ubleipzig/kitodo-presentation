@@ -566,16 +566,18 @@ class tx_dlf_em {
      */
     public function checkMetadataFormats(&$params, &$pObj) {
 
+        // TODO rename $nsDefined - common name for namespace and 
         $nsDefined = array (
             'MODS' => FALSE,
-            'TEIHDR' => FALSE
+            'TEIHDR' => FALSE,
+            'IIIF' => FALSE
         );
 
         // Check if formats "MODS" and "TEIHDR" exist.
         $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
             'type',
             'tx_dlf_formats',
-            '(type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('MODS', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('TEIHDR', 'tx_dlf_formats').')'.tx_dlf_helper::whereClause('tx_dlf_formats')
+            '(type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('MODS', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('TEIHDR', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('IIIF', 'tx_dlf_formats').')'.tx_dlf_helper::whereClause('tx_dlf_formats')
         );
 
         while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
@@ -613,6 +615,19 @@ class tx_dlf_em {
 
         }
 
+        // Add IIIF Presentation 2.0 context
+        if (!$nsDefined['IIIF']) {
+            
+            $data['tx_dlf_formats'][uniqid('NEW')] = array (
+                'pid' => 0,
+                'type' => 'IIIF',
+                'root' => 'none',
+                'namespace' => 'http://iiif.io/api/presentation/2/context.json',
+                'class' => 'none'
+            );
+            
+        }
+        
         if (!empty($data)) {
 
             // Process changes.

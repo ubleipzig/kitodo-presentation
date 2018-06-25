@@ -37,6 +37,11 @@ $metadata = array (
                 'xpath' => './teihdr:fileDesc/teihdr:sourceDesc/teihdr:msDesc/teihdr:head/teihdr:note[@type="caption"]',
                 'xpath_sorting' => '',
             ),
+            array (
+                'encoded' => 3,
+                'xpath' => '$[label]',
+                'xpath_sorting' => '',
+            ),
         ),
         'default_value' => '',
         'wrap' => "key.wrap = <dt class=\"tx-dlf-metadata-title\">|</dt>\nvalue.required = 1\nvalue.wrap = <dd class=\"tx-dlf-metadata-title\">|</dd>",
@@ -75,6 +80,11 @@ $metadata = array (
                 'xpath' => './teihdr:fileDesc/teihdr:sourceDesc/teihdr:msDesc/teihdr:head/teihdr:name',
                 'xpath_sorting' => '',
             ),
+            array (
+                'encoded' => 3,
+                'xpath' => "$.metadata.[?(@.label=='Author')].value",
+                'xpath_sorting' => '',
+            ),
         ),
         'default_value' => '',
         'wrap' => '',
@@ -92,6 +102,11 @@ $metadata = array (
             array (
                 'encoded' => 2,
                 'xpath' => './teihdr:fileDesc/teihdr:sourceDesc/teihdr:msDesc/teihdr:head/teihdr:origPlace',
+                'xpath_sorting' => '',
+            ),
+            array (
+                'encoded' => 3,
+                'xpath' => "$.metadata.[?(@.label=='Place of publication')].value",
                 'xpath_sorting' => '',
             ),
         ),
@@ -112,6 +127,11 @@ $metadata = array (
                 'encoded' => 2,
                 'xpath' => './teihdr:fileDesc/teihdr:sourceDesc/teihdr:msDesc/teihdr:head/teihdr:origDate',
                 'xpath_sorting' => './teihdr:fileDesc/teihdr:sourceDesc/teihdr:msDesc/teihdr:head/teihdr:origDate/@when',
+            ),
+            array (
+                'encoded' => 3,
+                'xpath' => "$.metadata.[?(@.label=='Date of publication')].value",
+                'xpath_sorting' => '',
             ),
         ),
         'default_value' => '',
@@ -156,6 +176,12 @@ $metadata = array (
                 'xpath' => './teihdr:fileDesc/teihdr:sourceDesc/teihdr:msDesc/teihdr:msIdentifier/teihdr:collection',
                 'xpath_sorting' => '',
             ),
+// TODO inserting a new collection from a manifest does not work yet             
+//             array (
+//                 'encoded' => 3,
+//                 'xpath' => "$.metadata.[?(@.label=='Collection')].value",
+//                 'xpath_sorting' => '',
+//             ),
         ),
         'default_value' => '',
         'wrap' => '',
@@ -180,6 +206,12 @@ $metadata = array (
                 'xpath' => './teihdr:fileDesc/teihdr:publicationStmt/teihdr:publisher',
                 'xpath_sorting' => '',
             ),
+            array (
+                'encoded' => 3,
+                'xpath' => "$.metadata.[?(@.label=='Owner')].value",
+                'xpath_sorting' => '',
+            ),
+            
         ),
         'default_value' => '',
         'wrap' => '',
@@ -226,6 +258,11 @@ $metadata = array (
             array (
                 'encoded' => 2,
                 'xpath' => './teihdr:fileDesc/teihdr:publicationStmt/teihdr:idno[@type="urn"]',
+                'xpath_sorting' => '',
+            ),
+            array (
+                'encoded' => 3,
+                'xpath' => "$.metadata.[?(@.label=='URN')].value",
                 'xpath_sorting' => '',
             ),
         ),
@@ -276,6 +313,11 @@ $metadata = array (
                 'xpath' => './teihdr:fileDesc/teihdr:publicationStmt/teihdr:idno[@type="mmid"]',
                 'xpath_sorting' => '',
             ),
+            array (
+                'encoded' => 3,
+                'xpath' => "$.metadata.[?(@.label=='Source PPN (SWB)')].value",
+                'xpath_sorting' => '',
+            ),
         ),
         'default_value' => '',
         'wrap' => '',
@@ -300,6 +342,11 @@ $metadata = array (
                 'xpath' => './teihdr:fileDesc/teihdr:publicationStmt/teihdr:idno[@type="recordIdentifier"]',
                 'xpath_sorting' => '',
             ),
+            array (
+                'encoded' => 3,
+                'xpath' => "$['@id']",
+                'xpath_sorting' => '',
+            ),
         ),
         'default_value' => '',
         'wrap' => '',
@@ -322,6 +369,11 @@ $metadata = array (
             array (
                 'encoded' => 2,
                 'xpath' => './teihdr:fileDesc/teihdr:publicationStmt/teihdr:idno[@type="kitodo"]',
+                'xpath_sorting' => '',
+            ),
+            array (
+                'encoded' => 3,
+                'xpath' => "$.metadata.[?(@.label=='Kitodo')].value",
                 'xpath_sorting' => '',
             ),
         ),

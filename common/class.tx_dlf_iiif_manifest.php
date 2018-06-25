@@ -13,6 +13,7 @@ use iiif\model\resources\Range;
 use iiif\model\resources\AnnotationList;
 use iiif\model\vocabulary\Motivation;
 use iiif\model\vocabulary\Types;
+use Flow\JSONPath\JSONPath;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -461,8 +462,19 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         if (!class_exists('\\iiif\\model\\resources\\IiifReader', false)) {
             
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/AccessHelper.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/JSONPath.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/JSONPathException.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/JSONPathLexer.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/JSONPathToken.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/AbstractFilter.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/IndexesFilter.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/IndexFilter.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/QueryMatchFilter.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/QueryResultFilter.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/RecursiveFilter.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/SliceFilter.php'));
             require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
-            
         }
         
         // Sanitize input.
@@ -686,8 +698,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     public function getMetadata($id, $cPid = 0)
     {
-        // TODO load metadata configuration from db
-        
         if (!empty($this->metadataArray[$id]) && $this->metadataArray[0] == $cPid) {
             
             return $this->metadataArray[$id];
@@ -715,43 +725,113 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             'owner' => array (),
         );
 
-        if ($this->iiif instanceof Manifest || $this->iiif instanceof Collection) {
-            
-            // TODO multiple labels, translations; configurable
-            $metadata['title'][] = $this->iiif->getDefaultLabel();
-            
-        }
-        
         $metadata['document_format'][] = 'IIIF';
         
-        // FIXME documents cannot be saved without structure types, but IIIF manifests have no means of declaration for that
+        $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
+            'tx_dlf_metadata.index_name AS index_name,tx_dlf_metadataformat.xpath AS xpath,tx_dlf_metadataformat.xpath_sorting AS xpath_sorting,tx_dlf_metadata.is_sortable AS is_sortable,tx_dlf_metadata.default_value AS default_value,tx_dlf_metadata.format AS format',
+            'tx_dlf_metadata,tx_dlf_metadataformat,tx_dlf_formats',
+            'tx_dlf_metadata.pid='.$cPid.' AND tx_dlf_metadataformat.pid='.$cPid.' AND ((tx_dlf_metadata.uid=tx_dlf_metadataformat.parent_id AND tx_dlf_metadataformat.encoded=tx_dlf_formats.uid AND tx_dlf_formats.type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('IIIF', 'tx_dlf_formats').') OR tx_dlf_metadata.format=0)'.tx_dlf_helper::whereClause('tx_dlf_metadata', TRUE).tx_dlf_helper::whereClause('tx_dlf_metadataformat').tx_dlf_helper::whereClause('tx_dlf_formats'),
+            '',
+            '',
+            ''
+            );
+        
+        // TODO get structure type from manifest metadata
         $metadata['type'][] = 'unknown';
         
-        if ($this->iiif instanceof Manifest) {
+        while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
             
-            // TODO for every metadatum: translation; multiple values; configuration 
+            // Set metadata field's value(s).
+            if ($resArray['format'] > 0 && !empty($resArray['xpath']) && ($values = $this->iiif->jsonPath($resArray['xpath'])) != null) {
+                
+                if (is_string($values)) {
+                    
+                    $metadata[$resArray['index_name']] = array (trim((string) $values));
+                    
+                } elseif ($values instanceof JSONPath && is_array($values->data()) && count($values->data()>1 )) {
+                    
+                    $metadata[$resArray['index_name']] = array ();
+                    
+                    foreach ($values->data() as $value) {
+                        
+                        $metadata[$resArray['index_name']][] = trim((string) $value);
+                        
+                    }
+                    
+                }
+                
+            }
             
-            $metadata['author'][] = $this->iiif->getMetadataForLabel('Author');
+            // Set default value if applicable.
+            // '!empty($resArray['default_value'])' is not possible, because '0' is a valid default value.
+            // Setting an empty default value creates a lot of empty fields within the index.
+            // These empty fields are then shown within the search facets as 'empty'.
+            if (empty($metadata[$resArray['index_name']][0]) && strlen($resArray['default_value']) > 0) {
+                
+                $metadata[$resArray['index_name']] = array ($resArray['default_value']);
+                
+            }
             
-            $metadata['place'][] = $this->iiif->getMetadataForLabel('Place of publication');
-            
-            $metadata['place_sorting'][] = $this->iiif->getMetadataForLabel('Place of publication');
-           
-            $metadata['year'][] = $this->iiif->getMetadataForLabel('Date of publication');
-            
-            $metadata['year_sorting'][] = $this->iiif->getMetadataForLabel('Date of publication');
-            
-            $metadata['prod_id'][] = $this->iiif->getMetadataForLabel('Kitodo');
-            
-            $metadata['record_id'][] = $this->recordId;
-            
-            $metadata['union_id'][] = $this->iiif->getMetadataForLabel('Source PPN (SWB)');
-            
-            // $metadata['collection'][] = $this->iiif->getMetadataForLabel('Collection');
-            
-            $metadata['owner'][] = $this->iiif->getMetadataForLabel('Owner');
+            // Set sorting value if applicable.
+            if (!empty($metadata[$resArray['index_name']]) && $resArray['is_sortable']) {
+                
+                if ($resArray['format'] > 0 && !empty($resArray['xpath_sorting']) && ($values = $this->iiif->jsonPath($resArray['xpath_sorting']) != null)) {
+                    
+                    
+                    if ($values instanceof string) {
+                        
+                        $metadata[$resArray['index_name'].'_sorting'][0] = array (trim((string) $values));
+                        
+                    } elseif ($values instanceof JSONPath && is_array($values->data()) && count($values->data()>1 )) {
+                        
+                        $metadata[$resArray['index_name']] = array ();
+                        
+                        foreach ($values->data() as $value) {
+                            
+                            $metadata[$resArray['index_name'].'_sorting'][0] = trim((string) $value);
+                            
+                        }
+                        
+                    }
+                    
+                }
+                
+                if (empty($metadata[$resArray['index_name'].'_sorting'][0])) {
+                    
+                    $metadata[$resArray['index_name'].'_sorting'][0] = $metadata[$resArray['index_name']][0];
+                    
+                }
+                
+            }
             
         }
+        
+        
+//         if ($this->iiif instanceof Manifest) {
+            
+//             // TODO for every metadatum: translation; multiple values; configuration 
+            
+//             $metadata['author'][] = $this->iiif->getMetadataForLabel('Author');
+            
+//             $metadata['place'][] = $this->iiif->getMetadataForLabel('Place of publication');
+            
+//             $metadata['place_sorting'][] = $this->iiif->getMetadataForLabel('Place of publication');
+           
+//             $metadata['year'][] = $this->iiif->getMetadataForLabel('Date of publication');
+            
+//             $metadata['year_sorting'][] = $this->iiif->getMetadataForLabel('Date of publication');
+            
+//             $metadata['prod_id'][] = $this->iiif->getMetadataForLabel('Kitodo');
+            
+//             $metadata['record_id'][] = $this->recordId;
+            
+//             $metadata['union_id'][] = $this->iiif->getMetadataForLabel('Source PPN (SWB)');
+            
+//             // $metadata['collection'][] = $this->iiif->getMetadataForLabel('Collection');
+            
+//             $metadata['owner'][] = $this->iiif->getMetadataForLabel('Owner');
+            
+//         }
         
         // TODO use configuration
         
