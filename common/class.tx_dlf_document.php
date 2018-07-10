@@ -630,6 +630,8 @@ abstract class tx_dlf_document {
         return $titledata;
 
     }
+    
+    public abstract function getStructureDepth($logId);
 
     /**
      * This sets some basic class properties

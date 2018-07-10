@@ -10,7 +10,7 @@
  */
 
 /**
- * Document class 'tx_dlf_document' for the 'dlf' extension.
+ * Document class 'tx_dlf_mets_document' for the 'dlf' extension.
  *
  * @author	Sebastian Meyer <sebastian.meyer@slub-dresden.de>
  * @author	Henrik Lochmann <dev@mentalmotive.com>
@@ -822,6 +822,15 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
         return $titledata;
 
+    }
+
+    /**
+     * {@inheritDoc}
+     * @see tx_dlf_document::getStructureDepth()
+     */
+    public function getStructureDepth($logId)
+    {
+        return count($this->mets->xpath('./mets:structMap[@TYPE="LOGICAL"]//mets:div[@ID="'.$logId.'"]/ancestor::*'));
     }
 
     /**

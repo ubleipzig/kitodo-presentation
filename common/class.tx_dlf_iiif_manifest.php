@@ -35,6 +35,14 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     protected $hasFulltextSet = false;
     
     protected $fulltext = null;
+    
+    /**
+     * This holds the original manifest's parsed metadata array with their corresponding structMap//div's ID as array key
+     *
+     * @var	array
+     * @access protected
+     */
+    protected $originalMetadataArray = array ();
 
     /**
      * The extension key
@@ -501,9 +509,9 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             return $this->logicalUnits[$id];
             
-        } elseif (!empty($this->logicalUnits[$id])) {
+        } elseif (!empty($id)) {
             
-            $logUnits[] = $this->logicalUnits[$id];
+            $logUnits[] = $this->iiif->getContainedResourceById($id);
             
         } else {
             
@@ -562,13 +570,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
 
         $details['contentIds'] = '';
         
-        $details['volume'] = '';
-        
         // TODO set volume information?
+        $details['volume'] = '';
         
         $details['pagination'] = '';
         
-        // FIXME Document cannot be saved without type. 'unknown' ist just a workaround.
+        // TODO set suitable type 
         $details['type'] = 'unknown';
         
         $dummy = array();
@@ -598,8 +605,10 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             $canvases = $resource->getAllCanvases();
             
         }
-
+        
         if ($startCanvas != null) {
+            
+            $details['pagination'] = $startCanvas->getLabel();
             
             $startCanvasIndex = array_search($startCanvas, $this->iiif->getSequences()[0]->getCanvases());
             
@@ -691,6 +700,43 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         return $details;
         
     }
+    
+    
+    public function getManifestMetadata($id, $cPid = 0) {
+        
+        if (!empty($this->originalMetadataArray[$id])) {
+            
+            return $this->metadataArray[$id];
+            
+        }
+        
+        $iiifResource = $this->iiif->getContainedResourceById($id);
+        
+        $result = array();
+        
+        if ($iiifResource != null) {
+            
+            if ($iiifResource->getLabel()!=null && $iiifResource->getLabel() != "") {
+                
+                $result['Label'] = $iiifResource->getLabel();
+                
+            }
+            
+            if ($iiifResource->getMetadata() != null) {
+                
+                foreach ($iiifResource->getMetadata() as $metadatum)  {
+                    
+                    $result[$metadatum['label']] = $iiifResource->getMetadataForLabel($metadatum['label']);
+                    
+                }
+                
+            }
+            
+        }
+        
+        return $result;
+        
+    }
 
     /**
      * {@inheritDoc}
@@ -736,13 +782,15 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             ''
             );
         
-        // TODO get structure type from manifest metadata
-        $metadata['type'][] = 'unknown';
-        
+//         // TODO get structure type from manifest metadata
+//         $metadata['type'][] = 'unknown';
+
+        $iiifResource = $this->iiif->getContainedResourceById($id);
+
         while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
             
             // Set metadata field's value(s).
-            if ($resArray['format'] > 0 && !empty($resArray['xpath']) && ($values = $this->iiif->jsonPath($resArray['xpath'])) != null) {
+            if ($resArray['format'] > 0 && !empty($resArray['xpath']) && ($values = $iiifResource->jsonPath($resArray['xpath'])) != null) {
                 
                 if (is_string($values)) {
                     
@@ -775,7 +823,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             // Set sorting value if applicable.
             if (!empty($metadata[$resArray['index_name']]) && $resArray['is_sortable']) {
                 
-                if ($resArray['format'] > 0 && !empty($resArray['xpath_sorting']) && ($values = $this->iiif->jsonPath($resArray['xpath_sorting']) != null)) {
+                if ($resArray['format'] > 0 && !empty($resArray['xpath_sorting']) && ($values = $iiifResource->jsonPath($resArray['xpath_sorting']) != null)) {
                     
                     
                     if ($values instanceof string) {
@@ -851,6 +899,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     
                     foreach ($this->iiif->getSequences()[0]->getCanvases() as $canvas) {
                         
+                        $this->smLinkCanvasToResource($canvas, $this->iiif);
+                        
                         $this->smLinkCanvasToResource($canvas, $this->iiif->getSequences()[0]);
                         
                     }
@@ -872,6 +922,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             $this->smLinksLoaded = true;
         
         }
+        
+        return $this->smLinks;
             
     }
     
@@ -880,6 +932,13 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         // map range's canvases including all child ranges' canvases
         
         foreach ($range->getAllCanvases() as $canvas) {
+            
+            if ($canvas == null) {
+                
+                // just for breakpoint
+                echo "soso";
+                
+            }
             
             $this->smLinkCanvasToResource($canvas, $range);
             
@@ -925,9 +984,13 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     {
         
         $this->smLinks['l2p'][$resource->getId()][] = $canvas->getId();
-        
-        $this->smLinks['p2l'][$canvas->getId()][] = $resource->getId();
-        
+
+        if (!is_array($this->smLinks['p2l'][$canvas->getId()]) || !in_array($resource->getId(), $this->smLinks['p2l'][$canvas->getId()])) {
+            
+            $this->smLinks['p2l'][$canvas->getId()][] = $resource->getId();
+            
+        }
+
     }
         
     
@@ -1023,6 +1086,18 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
     }
     
+    
+    
+    /**
+     * {@inheritDoc}
+     * @see tx_dlf_document::getStructureDepth()
+     */
+    public function getStructureDepth($logId)
+    {
+        // TODO
+        return 1;
+    }
+
     /**
      * {@inheritDoc}
      * @see tx_dlf_document::init()

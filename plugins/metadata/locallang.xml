@@ -25,6 +25,8 @@
 			<label index="tt_content.pi_flexform.rootline.none">none</label>
 			<label index="tt_content.pi_flexform.rootline.all">all</label>
 			<label index="tt_content.pi_flexform.rootline.titledata">titledata only</label>
+			<label index="tt_content.pi_flexform.originalIiifMetadata">Display metadata from IIIF manifests completely as given in the manifest</label>
+			<label index="tt_content.pi_flexform.iiifMetadataWrap">TypoScript-Wrap for IIIF manifest metadata</label>
 			<label index="tt_content.pi_flexform.separator">Separator for multi-valued fields</label>
 			<label index="tt_content.pi_flexform.templateFile">Template file</label>
 		</languageKey>
@@ -39,6 +41,8 @@
 			<label index="tt_content.pi_flexform.rootline.none">keine</label>
 			<label index="tt_content.pi_flexform.rootline.all">alle</label>
 			<label index="tt_content.pi_flexform.rootline.titledata">nur Titeldaten</label>
+			<label index="tt_content.pi_flexform.originalIiifMetadata">Metadaten für IIIF-Manifeste komplett wie im Manifest angegeben darstellen</label>
+			<label index="tt_content.pi_flexform.iiifMetadataWrap">TypoScript-Wrap für IIIF-Manifest-Metadaten</label>
 			<label index="tt_content.pi_flexform.separator">Trennzeichen für mehrwertige Felder</label>
 			<label index="tt_content.pi_flexform.templateFile">HTML-Template</label>
 		</languageKey>

@@ -13,7 +13,13 @@
 // @see http://dfg-viewer.de/en/profile-of-the-metadata/
 $metadata = array (
     'type' => array (
-        'format' => array (),
+        'format' => array (
+            array (
+                'encoded' => 3,
+                'xpath' => '$.metadata.[?(@.label==\'Manifest Type\')].value',
+                'xpath_sorting' => '',
+            ),
+        ),
         'default_value' => '',
         'wrap' => '',
         'index_tokenized' => 0,
