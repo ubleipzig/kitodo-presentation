@@ -517,9 +517,10 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $logUnits[] = $this->iiif;
             
-            if ($this->iiif instanceof Manifest && $this->iiif->getStructures()!=null) {
+            if ($this->iiif instanceof Manifest && $this->iiif->getTopRange()!=null) {
                 
-                $logUnits = array_merge($logUnits, $this->iiif->getStructures());
+                //$logUnits[] = array_merge($logUnits, $this->iiif->getTopRange()->getRanges());
+                $logUnits[] = $this->iiif->getTopRange();
                 
             }
         }
@@ -651,15 +652,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $details['children'] = array ();
             
-            if ($resource instanceof Manifest && $resource->getStructures()!==null && sizeof($resource->getStructures())>0) {
+            if ($resource instanceof Manifest && $resource->getTopRange()!=null) {
                     
-                foreach ($resource->getStructures() as $range) {
+                if ((array_search($resource->getTopRange()->getId(), $processedStructures) == false)) {
                     
-                    if ((array_search($resource->getId(), $processedStructures) == false)) {
-                        
-                        $details['children'][] = $this->getLogicalStructureInfo($range, TRUE, $processedStructures);
-                        
-                    }
+                    $details['children'][] = $this->getLogicalStructureInfo($resource->getTopRange(), TRUE, $processedStructures);
                     
                 }
                 
@@ -669,7 +666,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
 
                     foreach ($resource->getRanges() as $range) {
                         
-                        if ((array_search($resource->getId(), $processedStructures) == false)) {
+                        if ((array_search($range->getId(), $processedStructures) == false)) {
                             
                             $details['children'][] = $this->getLogicalStructureInfo($range, TRUE, $processedStructures);
                             
