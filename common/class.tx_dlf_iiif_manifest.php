@@ -241,7 +241,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 $this->physicalStructureInfo[$physSeq[0]]['orderlabel'] = $sequence->getDefaultLabel();
                 
                 // TODO Replace with configurable metadata (tx_dlf_structures). Check if it can be read from the metadata. 
-                $this->physicalStructureInfo[$physSeq[0]]['type'] = 'unknown';
+                $this->physicalStructureInfo[$physSeq[0]]['type'] = 'phySequence';
                 
                 // TODO check nescessity
                 $this->physicalStructureInfo[$physSeq[0]]['contentIds'] = null;
@@ -576,8 +576,19 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         $details['pagination'] = '';
         
-        // TODO set suitable type 
-        $details['type'] = 'unknown';
+        $cPid = ($this->cPid ? $this->cPid : $this->pid);
+        
+        if ($details['id'] == $this->_getToplevelId()) {
+            
+            $metadata = $this->getMetadata($details['id'], $cPid);
+            
+            if (!empty($metadata['type'][0])) {
+                
+                $details['type'] = $metadata['type'][0];
+                
+            }
+            
+        }
         
         $dummy = array();
         
