@@ -517,10 +517,13 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $logUnits[] = $this->iiif;
             
-            if ($this->iiif instanceof Manifest && $this->iiif->getTopRange()!=null) {
+            if ($this->iiif instanceof Manifest && $this->iiif->getTopRanges()!=null) {
                 
-                //$logUnits[] = array_merge($logUnits, $this->iiif->getTopRange()->getRanges());
-                $logUnits[] = $this->iiif->getTopRange();
+                foreach ($this->iiif->getTopRanges() as $range) {
+
+                    $logUnits[] = $range;
+                    
+                }
                 
             }
         }
@@ -663,11 +666,16 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $details['children'] = array ();
             
-            if ($resource instanceof Manifest && $resource->getTopRange()!=null) {
+            if ($resource instanceof Manifest && $resource->getTopRanges()!=null) {
                     
-                if ((array_search($resource->getTopRange()->getId(), $processedStructures) == false)) {
-                    
-                    $details['children'][] = $this->getLogicalStructureInfo($resource->getTopRange(), TRUE, $processedStructures);
+                foreach ($resource->getTopRanges() as $range)
+                {
+
+                    if ((array_search($range->getId(), $processedStructures) == false)) {
+                        
+                        $details['children'][] = $this->getLogicalStructureInfo($range, TRUE, $processedStructures);
+                        
+                    }
                     
                 }
                 
