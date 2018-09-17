@@ -1,6 +1,4 @@
 <?php
-use iiif\model\resources\AnnotationList;
-
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *

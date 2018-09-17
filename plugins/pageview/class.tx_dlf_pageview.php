@@ -1,7 +1,4 @@
 <?php
-use iiif\model\resources\Manifest;
-use iiif\model\vocabulary\Motivation;
-
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -11,6 +8,9 @@ use iiif\model\vocabulary\Motivation;
  * For the full copyright and license information, please read the
  * LICENSE.txt file that was distributed with this source code.
  */
+
+use iiif\presentation\v2\model\resources\Manifest;
+use iiif\presentation\v2\model\vocabulary\Motivation;
 
 /**
  * Plugin 'DLF: Pageview' for the 'dlf' extension.
@@ -326,7 +326,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
     
     public function getAnnotationLists($page)
     {
-        if (false && $this->doc instanceof tx_dlf_iiif_manifest) {
+        if ($this->doc instanceof tx_dlf_iiif_manifest) {
             
             $canvasId = $this->doc->physicalStructure[$page];
             
@@ -336,7 +336,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                 
                 $canvas = $iiif->getContainedResourceById($canvasId);
                 
-                /* @var $canvas \iiif\model\resources\Canvas */
+                /* @var $canvas \iiif\presentation\v2\model\resources\Canvas */
                 
                 if ($canvas!=null && $canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
                     
@@ -348,7 +348,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                             
                             foreach ($annotationList->getResources() as $annotation) {
                                 
-                                /* @var $annotation \iiif\model\resources\Annotation */
+                                /* @var $annotation \iiif\presentation\v2\model\resources\Annotation */
                                 
                                 if ($annotation->getMotivation() == Motivation::PAINTING
                                     && $annotation->getResource() != null 
