@@ -333,7 +333,8 @@ return array (
                 'renderType' => 'selectSingle',
                 'items' => array (
                     array ('METS', 'METS'),
-                    array ('IIIF', 'IIIF'),
+                    array ('IIIF Version 2', 'IIIF2'),
+                    array ('IIIF Version 3', 'IIIF3'),
                 ),
                 'size' => 1,
                 'minitems' => 1,
@@ -342,7 +343,7 @@ return array (
         ),
     ),
     'types' => array (
-        '0' => array ('showitem' => '--div--;LLL:EXT:dlf/locallang.xml:tx_dlf_documents.tab1, title,--palette--;;1;;1-1-1, author, year, place, structure,--palette--;;2;;2-2-2, collections;;;;3-3-3, --div--;LLL:EXT:dlf/locallang.xml:tx_dlf_documents.tab2, location;;;;1-1-1, record_id, prod_id;;;;2-2-2, oai_id;;;;3-3-3, opac_id, union_id, urn, purl;;;;4-4-4, --div--;LLL:EXT:dlf/locallang.xml:tx_dlf_documents.tab3, hidden,--palette--;;3;;1-1-1, fe_group;;;;2-2-2, status;;;;3-3-3, owner;;;;4-4-4'),
+        '0' => array ('showitem' => '--div--;LLL:EXT:dlf/locallang.xml:tx_dlf_documents.tab1, title,--palette--;;1;;1-1-1, author, year, place, structure, document_format,--palette--;;2;;2-2-2, collections;;;;3-3-3, --div--;LLL:EXT:dlf/locallang.xml:tx_dlf_documents.tab2, location;;;;1-1-1, record_id, prod_id;;;;2-2-2, oai_id;;;;3-3-3, opac_id, union_id, urn, purl;;;;4-4-4, --div--;LLL:EXT:dlf/locallang.xml:tx_dlf_documents.tab3, hidden,--palette--;;3;;1-1-1, fe_group;;;;2-2-2, status;;;;3-3-3, owner;;;;4-4-4'),
     ),
     'palettes' => array (
         '1' => array ('showitem' => 'title_sorting', 'canNotCollapse' => 1),

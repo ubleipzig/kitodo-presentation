@@ -1,19 +1,29 @@
 <?php
+/**
+ * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
+ *
+ * This file is part of the Kitodo and TYPO3 projects.
+ *
+ * @license GNU General Public License version 3 or later.
+ * For the full copyright and license information, please read the
+ * LICENSE.txt file that was distributed with this source code.
+ */
 
+use Flow\JSONPath\JSONPath;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
-use iiif\model\helper\IiifReader;
-use iiif\model\resources\AbstractIiifResource;
-use iiif\model\resources\Annotation;
-use iiif\model\resources\Canvas;
-use iiif\model\resources\Collection;
-use iiif\model\resources\ContentResource;
-use iiif\model\resources\Manifest;
-use iiif\model\resources\Range;
-use iiif\model\resources\AnnotationList;
-use iiif\model\vocabulary\Motivation;
-use iiif\model\vocabulary\Types;
-use Flow\JSONPath\JSONPath;
+use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
+use iiif\presentation\v2\model\helper\IiifReader;
+use iiif\presentation\v2\model\resources\AbstractIiifResource;
+use iiif\presentation\v2\model\resources\Annotation;
+use iiif\presentation\v2\model\resources\AnnotationList;
+use iiif\presentation\v2\model\resources\Canvas;
+use iiif\presentation\v2\model\resources\Collection;
+use iiif\presentation\v2\model\resources\ContentResource;
+use iiif\presentation\v2\model\resources\Manifest;
+use iiif\presentation\v2\model\resources\Range;
+use iiif\presentation\v2\model\vocabulary\Motivation;
+use iiif\presentation\v2\model\vocabulary\Types;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -65,6 +75,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             $whereClause = 'tx_dlf_documents.uid='.intval($uid).tx_dlf_helper::whereClause('tx_dlf_documents');
             
         } else {
+
             // Cast to string for safety reasons.
             $location = (string) $uid;
             
@@ -79,8 +90,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     
                 }
 
-                // TODO check for possibly already stored recordId
-                
             } else {
                 
                 // Loading failed.
@@ -225,7 +234,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             {
                 $sequence = $this->iiif->getSequences()[0];
                 
-                /* @var $sequence \iiif\model\resources\Sequence */
+                /* @var $sequence \iiif\presentation\v2\model\resources\Sequence */
                 $sequenceId = $this->iiif->getSequences()[0]->getId();
                 
                 $physSeq[0] = $sequenceId;
@@ -237,10 +246,9 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 // TODO translation?
                 $this->physicalStructureInfo[$physSeq[0]]['label'] = $sequence->getDefaultLabel();
                 
-                // TODO from configurable metadata; translation?
+                // TODO translation?
                 $this->physicalStructureInfo[$physSeq[0]]['orderlabel'] = $sequence->getDefaultLabel();
                 
-                // TODO Replace with configurable metadata (tx_dlf_structures). Check if it can be read from the metadata. 
                 $this->physicalStructureInfo[$physSeq[0]]['type'] = 'phySequence';
                 
                 // TODO check nescessity
@@ -278,7 +286,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         
                         $image = $canvas->getImages()[0];
                         
-                        /* @var $image iiif\model\resources\Annotation */
+                        /* @var $image iiif\presentation\v2\model\resources\Annotation */
                         
                         // put images in all non specific filegroups
                         if (isset($fileUses)) {
@@ -302,7 +310,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                                     
                                     foreach ($annotationList->getResources() as $annotation) {
                                         
-                                        /* @var  $annotation \iiif\model\resources\Annotation */
+                                        /* @var  $annotation \iiif\presentation\v2\model\resources\Annotation */
                                         if ($annotation->getMotivation() == Motivation::PAINTING &&
                                             $annotation->getResource() != null &&
                                             $annotation->getResource()->getFormat() == "text/plain" &&
@@ -374,6 +382,13 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         }
                         
                         // TODO Check if it is possible to look for pdf downloads in the services and put found service urls in the download group
+                        /*
+                         * 
+                         * - should be contained in "rendering" property
+                         * - format "application/pdf"
+                         * - pdf for work might be contained in mainifest or default sequence; pdf for page might be in canvas or image resource
+                         * 
+                         */
                         
                     }
                     
@@ -792,15 +807,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
             'tx_dlf_metadata.index_name AS index_name,tx_dlf_metadataformat.xpath AS xpath,tx_dlf_metadataformat.xpath_sorting AS xpath_sorting,tx_dlf_metadata.is_sortable AS is_sortable,tx_dlf_metadata.default_value AS default_value,tx_dlf_metadata.format AS format',
             'tx_dlf_metadata,tx_dlf_metadataformat,tx_dlf_formats',
-            'tx_dlf_metadata.pid='.$cPid.' AND tx_dlf_metadataformat.pid='.$cPid.' AND ((tx_dlf_metadata.uid=tx_dlf_metadataformat.parent_id AND tx_dlf_metadataformat.encoded=tx_dlf_formats.uid AND tx_dlf_formats.type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('IIIF', 'tx_dlf_formats').') OR tx_dlf_metadata.format=0)'.tx_dlf_helper::whereClause('tx_dlf_metadata', TRUE).tx_dlf_helper::whereClause('tx_dlf_metadataformat').tx_dlf_helper::whereClause('tx_dlf_formats'),
+            'tx_dlf_metadata.pid='.$cPid.' AND tx_dlf_metadataformat.pid='.$cPid.' AND ((tx_dlf_metadata.uid=tx_dlf_metadataformat.parent_id AND tx_dlf_metadataformat.encoded=tx_dlf_formats.uid AND tx_dlf_formats.type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('IIIF2', 'tx_dlf_formats').') OR tx_dlf_metadata.format=0)'.tx_dlf_helper::whereClause('tx_dlf_metadata', TRUE).tx_dlf_helper::whereClause('tx_dlf_metadataformat').tx_dlf_helper::whereClause('tx_dlf_formats'),
             '',
             '',
             ''
             );
         
-//         // TODO get structure type from manifest metadata
-//         $metadata['type'][] = 'unknown';
-
         $iiifResource = $this->iiif->getContainedResourceById($id);
 
         while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
@@ -1168,7 +1180,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         {
             $manifest = $this->iiif;
             
-            /* @var $manifest \iiif\model\resources\Manifest */
+            /* @var $manifest \iiif\presentation\v2\model\resources\Manifest */
             
             $canvases = $manifest->getSequences()[0]->getCanvases();
             
@@ -1182,7 +1194,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             
                             foreach ($annotationList->getResources() as $annotation) {
                                 
-                                /* @var  $annotation \iiif\model\resources\Annotation */
+                                /* @var  $annotation \iiif\presentation\v2\model\resources\Annotation */
                                 // Assume that a plain text annotation which is meant to be displayed to the user represents the full text
                                 if ($annotation->getMotivation() == Motivation::PAINTING && 
                                     $annotation->getResource() != null &&

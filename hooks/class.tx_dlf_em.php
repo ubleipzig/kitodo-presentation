@@ -570,14 +570,15 @@ class tx_dlf_em {
         $nsDefined = array (
             'MODS' => FALSE,
             'TEIHDR' => FALSE,
-            'IIIF' => FALSE
+            'IIIF2' => FALSE,
+            'IIIF3' => FALSE
         );
 
         // Check if formats "MODS" and "TEIHDR" exist.
         $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
             'type',
             'tx_dlf_formats',
-            '(type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('MODS', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('TEIHDR', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('IIIF', 'tx_dlf_formats').')'.tx_dlf_helper::whereClause('tx_dlf_formats')
+            '(type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('MODS', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('TEIHDR', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('IIIF2', 'tx_dlf_formats').')'.tx_dlf_helper::whereClause('tx_dlf_formats')
         );
 
         while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {

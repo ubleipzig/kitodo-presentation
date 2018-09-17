@@ -1,7 +1,4 @@
 <?php
-use iiif\model\helper\IiifReader;
-use iiif\model\resources\AbstractIiifResource;
-
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -11,6 +8,13 @@ use iiif\model\resources\AbstractIiifResource;
  * For the full copyright and license information, please read the
  * LICENSE.txt file that was distributed with this source code.
  */
+
+use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
+use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_NOTICE;
+use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
+use iiif\presentation\IiifHelper;
+use iiif\presentation\v2\model\resources\AbstractIiifResource;
+use iiif\presentation\v3\model\resources\AbstractIiifResource3;
 
 /**
  * Document class 'tx_dlf_document' for the 'dlf' extension.
@@ -30,6 +34,8 @@ abstract class tx_dlf_document {
      * @access protected
      */
     protected $cPid = 0;
+    
+    public static $remoteContentCache = array();
 
     /**
      * The extension key
@@ -315,7 +321,7 @@ abstract class tx_dlf_document {
 
                     $documentFormat = $resArray['document_format'];
                     
-                    if ($documentFormat == 'METS' || $documentFormat == 'IIIF') {
+                    if ($documentFormat == 'METS' || $documentFormat == 'IIIF2' || $documentFormat == 'IIIF3') {
                         
                         return $documentFormat;
                         
@@ -335,7 +341,7 @@ abstract class tx_dlf_document {
                 
                 $content = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($location);
                 
-                if (($xml = @simplexml_load_string($content)) !== false) {
+                if (strpos(strtolower($content), "<?xml")===0 && ($xml = @simplexml_load_string($content)) !== false) {
                     
                     /* @var $xml SimpleXMLElement */
                     $xml->registerXPathNamespace('mets', 'http://www.loc.gov/METS/');
@@ -346,17 +352,26 @@ abstract class tx_dlf_document {
                     
                 } else {
                     
-                    if (!class_exists('\\iiif\\model\\resources\\IiifReader', false)) {
+                    $contentAsJsonArray = json_decode($content, true);
+                    
+                    if (!class_exists('\\iiif\\presentation\\IiifHelper', false)) {
                         
                         require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
                         
                     }
                     
-                    if (IiifReader::getIiifResourceFromJsonString($content) instanceof AbstractIiifResource) {
+                    $iiif = IiifHelper::loadIiifResource($contentAsJsonArray);
+                    
+                    if ($iiif instanceof AbstractIiifResource) {
                         
-                        return 'IIIF';
-                            
+                        return 'IIIF2';
+                        
+                    } elseif ($iiif instanceof AbstractIiifResource3) {
+                        
+                        return 'IIIF3';
+                        
                     }
+                    
                 }
                 
                 return null;
@@ -428,8 +443,10 @@ abstract class tx_dlf_document {
         
         if ($documentFormat == 'METS') {
             $instance = &tx_dlf_mets_document::getMetsInstance($uid, $pid);
-        } elseif ($documentFormat == 'IIIF') {
+        } elseif ($documentFormat == 'IIIF2') {
             $instance = tx_dlf_iiif_manifest::getIiifInstance($uid, $pid);
+        } elseif ($documentFormat == 'IIIF3') {
+            // TODO presentation api v3
         }
 
         // ...and save instance to registry.
