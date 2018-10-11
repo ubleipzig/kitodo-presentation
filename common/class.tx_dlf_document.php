@@ -177,7 +177,7 @@ abstract class tx_dlf_document {
     protected $ready = FALSE;
 
     /**
-     * The METS file's record identifier
+     * The METS file's / IIIF manifest's record identifier
      *
      * @var	string
      * @access protected
@@ -273,26 +273,9 @@ abstract class tx_dlf_document {
 
     }
 
-    /**
-     * This gets the location of a file representing a physical page or track
-     *
-     * @access	public
-     *
-     * @param	string		$id: The @ID attribute of the file node
-     *
-     * @return	string		The file's location as URL
-     */
-    public abstract function getFileLocation($id);
-    /**
-     * This gets the MIME type of a file representing a physical page or track
-     *
-     * @access	public
-     *
-     * @param	string		$id: The @ID attribute of the file node
-     *
-     * @return	string		The file's MIME type
-     */
-    public abstract function getFileMimeType($id);
+    protected abstract function establishRecordId();
+
+    protected abstract function getDocument();
     
     protected static function getDocumentFormat($uid, $pid = 0)
     {
@@ -318,7 +301,7 @@ abstract class tx_dlf_document {
                 for ($i = 0, $j = $GLOBALS['TYPO3_DB']->sql_num_rows($result); $i < $j; $i++) {
                     
                     $resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result);
-
+                    
                     $documentFormat = $resArray['document_format'];
                     
                     if ($documentFormat == 'METS' || $documentFormat == 'IIIF2' || $documentFormat == 'IIIF3') {
@@ -336,7 +319,7 @@ abstract class tx_dlf_document {
             $location = (string) $uid;
             
             // Try to load a file from the url
-            // FIXME double loading and processing of files is inefficient 
+            // FIXME double loading and processing of files is inefficient
             if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location)) {
                 
                 $content = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($location);
@@ -381,6 +364,28 @@ abstract class tx_dlf_document {
         }
         
     }
+    
+    /**
+     * This gets the location of a file representing a physical page or track
+     *
+     * @access	public
+     *
+     * @param	string		$id: The @ID attribute of the file node
+     *
+     * @return	string		The file's location as URL
+     */
+    public abstract function getFileLocation($id);
+    
+    /**
+     * This gets the MIME type of a file representing a physical page or track
+     *
+     * @access	public
+     *
+     * @param	string		$id: The @ID attribute of the file node
+     *
+     * @return	string		The file's MIME type
+     */
+    public abstract function getFileMimeType($id);
     
     /**
      * This is a singleton class, thus an instance must be created by this method
@@ -446,7 +451,7 @@ abstract class tx_dlf_document {
         } elseif ($documentFormat == 'IIIF2') {
             $instance = tx_dlf_iiif_manifest::getIiifInstance($uid, $pid);
         } elseif ($documentFormat == 'IIIF3') {
-            // TODO presentation api v3
+            $instance = tx_dlf_iiif_manifest_3::getIiif3Instance($uid, $pid);
         }
 
         // ...and save instance to registry.
@@ -648,8 +653,38 @@ abstract class tx_dlf_document {
 
     }
     
-    public abstract function getStructureDepth($logId);
-
+    protected function getTreeDepth($structure, $depth, $logId) {
+        
+        foreach($structure as $element) {
+            
+            if ($element['id'] == $logId) {
+                
+                return $depth;
+                
+            } elseif (array_key_exists('children', $element)) {
+                
+                $foundInChildren = $this->getTreeDepth($element['children'], $depth + 1, $logId);
+                
+                if ($foundInChildren!==false) {
+                    
+                    return $foundInChildren;
+                    
+                }
+                
+            }
+            
+        }
+        
+        return false;
+        
+    }
+    
+    public function getStructureDepth($logId) {
+        
+        return $this->getTreeDepth($this->_getTableOfContents(), 1, $logId);
+        
+    }
+    
     /**
      * This sets some basic class properties
      *
@@ -1372,7 +1407,7 @@ abstract class tx_dlf_document {
      *
      * @access	protected
      *
-     * @return	mixed		The METS file's record identifier
+     * @return	mixed		The METS file's / IIIF manifest's record identifier
      */
     protected function _getRecordId() {
 
@@ -1608,41 +1643,22 @@ abstract class tx_dlf_document {
 
         } else {
 
-            // Try to load METS file.
+            // Try to load METS file / IIIF manifest.
             if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($uid) && $this->load($uid)) {
 
-                // Initialize core METS object.
+                // Initialize core METS or IIIF object.
                 $this->init();
 
-                if ($this->mets !== NULL) {
+                if ($this->getDocument() !== NULL) {
 
                     // Cast to string for safety reasons.
                     $location = (string) $uid;
 
-                    // Check for METS object @ID.
-                    if (!empty($this->mets['OBJID'])) {
-
-                        $this->recordId = (string) $this->mets['OBJID'];
-
-                    }
-
-                    // Get hook objects.
-                    $hookObjects = tx_dlf_helper::getHookObjects('common/class.tx_dlf_document.php');
-
-                    // Apply hooks.
-                    foreach ($hookObjects as $hookObj) {
-
-                        if (method_exists($hookObj, 'construct_postProcessRecordId')) {
-
-                            $hookObj->construct_postProcessRecordId($this->xml, $this->recordId);
-
-                        }
-
-                    }
+                    $this->establishRecordId();
 
                 } else {
 
-                    // No METS part found.
+                    // No METS / IIIF part found.
                     return;
 
                 }
@@ -1692,15 +1708,15 @@ abstract class tx_dlf_document {
             $this->thumbnailLoaded = TRUE;
 
             // Load XML file if necessary...
-            if ($this->mets === NULL && $this->load($this->location)) {
+            if ($this->getDocument() === NULL && $this->load($this->location)) {
 
                 // ...and set some basic properties.
                 $this->init();
 
             }
 
-            // Do we have a METS object now?
-            if ($this->mets !== NULL) {
+            // Do we have a METS / IIIF object now?
+            if ($this->getDocument() !== NULL) {
 
                 // Set new location if necessary.
                 if (!empty($location)) {
@@ -1714,7 +1730,7 @@ abstract class tx_dlf_document {
 
             }
 
-        } elseif ($this->mets !== NULL) {
+        } elseif ($this->getDocument() !== NULL) {
 
             // Set location as UID for documents not in database.
             $this->uid = $location;

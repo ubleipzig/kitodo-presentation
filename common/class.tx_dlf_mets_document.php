@@ -654,46 +654,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
     }
 
-    /**
-     * This returns the first corresponding physical page number of a given logical page label
-     *
-     * @access	public
-     *
-     * @param	string		$logicalPage: The label (or a part of the label) of the logical page
-     *
-     * @return	integer		The physical page number
-     */
-    public function getPhysicalPage($logicalPage) {
-
-        if (!empty($this->lastSearchedPhysicalPage['logicalPage']) && $this->lastSearchedPhysicalPage['logicalPage'] == $logicalPage) {
-
-            return $this->lastSearchedPhysicalPage['physicalPage'];
-
-        } else {
-
-            $physicalPage = 0;
-
-            foreach ($this->physicalStructureInfo as $page) {
-
-                if (strpos($page['orderlabel'], $logicalPage) !== FALSE) {
-
-                    $this->lastSearchedPhysicalPage['logicalPage'] = $logicalPage;
-                    $this->lastSearchedPhysicalPage['physicalPage'] = $physicalPage;
-
-                    return $physicalPage;
-
-                }
-
-                $physicalPage++;
-
-            }
-
-        }
-
-        return 1;
-
-    }
-
     public function getRawText($id) {
         
         $rawText = '';
@@ -796,34 +756,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
         
     }
     
-    /**
-     * This extracts all the metadata for the toplevel logical structure node
-     *
-     * @access	public
-     *
-     * @param	integer		$cPid: The PID for the metadata definitions
-     *
-     * @return	array		The logical structure node's parsed metadata array
-     */
-    public function getTitledata($cPid = 0) {
-
-        $titledata = $this->getMetadata($this->_getToplevelId(), $cPid);
-        
-        // Set record identifier for METS file if not present.
-        if (is_array($titledata) && array_key_exists('record_id', $titledata)) {
-
-            if (!empty($this->recordId) && !in_array($this->recordId, $titledata['record_id'])) {
-
-                array_unshift($titledata['record_id'], $this->recordId);
-
-            }
-
-        };
-
-        return $titledata;
-
-    }
-
     /**
      * {@inheritDoc}
      * @see tx_dlf_document::getStructureDepth()
@@ -1455,29 +1387,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
     }
 
     /**
-     * This builds an array of the document's logical structure
-     *
-     * @access	protected
-     *
-     * @return	array		Array of structure nodes' id, label, type and physical page indexes/mptr link with original hierarchy preserved
-     */
-    protected function _getTableOfContents() {
-
-        // Is there no logical structure array yet?
-        if (!$this->tableOfContentsLoaded) {
-
-            // Get all logical structures.
-            $this->getLogicalStructure('', TRUE);
-
-            $this->tableOfContentsLoaded = TRUE;
-
-        }
-
-        return $this->tableOfContents;
-
-    }
-
-    /**
      * This returns the document's thumbnail location
      *
      * @access	protected
@@ -1671,150 +1580,40 @@ final class tx_dlf_mets_document extends tx_dlf_document {
      */
     protected function __clone() {}
 
+    protected function getDocument() {
+
+        return $this->mets;
+
+    }
+    
     /**
-     * This is a singleton class, thus the constructor should be private/protected
-     *
-     * @access	protected
-     *
-     * @param	integer		$uid: The UID of the document to parse or URL to XML file
-     * @param	integer		$pid: If > 0, then only document with this PID gets loaded
-     *
-     * @return	void
+     * {@inheritDoc}
+     * @see tx_dlf_document::establishRecordId()
      */
-    protected function __construct($uid, $pid) {
+    protected function establishRecordId()
+    {
 
-        // Prepare to check database for the requested document.
-        if (\TYPO3\CMS\Core\Utility\MathUtility::canBeInterpretedAsInteger($uid)) {
-
-            $whereClause = 'tx_dlf_documents.uid='.intval($uid).tx_dlf_helper::whereClause('tx_dlf_documents');
-
-        } else {
-
-            // Cast to string for safety reasons.
-            $location = (string) $uid;
-
-            // Try to load METS file.
-            if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location) && $this->load($location)) {
-
-                // Initialize core METS object.
-                $this->init();
-
-                if ($this->mets !== NULL) {
-
-                    // Check for METS object @ID.
-                    if (!empty($this->mets['OBJID'])) {
-
-                        $this->recordId = (string) $this->mets['OBJID'];
-
-                    }
-
-                    // Get hook objects.
-                    $hookObjects = tx_dlf_helper::getHookObjects('common/class.tx_dlf_document.php');
-
-                    // Apply hooks.
-                    foreach ($hookObjects as $hookObj) {
-
-                        if (method_exists($hookObj, 'construct_postProcessRecordId')) {
-
-                            $hookObj->construct_postProcessRecordId($this->xml, $this->recordId);
-
-                        }
-
-                    }
-
-                } else {
-
-                    // No METS part found.
-                    return;
-
-                }
-
-            } else {
-
-                // Loading failed.
-                return;
-
-            }
-
-            if (!empty($this->recordId)) {
-
-                $whereClause = 'tx_dlf_documents.record_id='.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->recordId, 'tx_dlf_documents').tx_dlf_helper::whereClause('tx_dlf_documents');
-
-            } else {
-
-                // There is no record identifier and there should be no hit in the database.
-                $whereClause = '1=-1';
-
-            }
-
+        // Check for METS object @ID.
+        if (!empty($this->mets['OBJID'])) {
+            
+            $this->recordId = (string) $this->mets['OBJID'];
+            
         }
-
-        // Check for PID if needed.
-        if ($pid) {
-
-            $whereClause .= ' AND tx_dlf_documents.pid='.intval($pid);
-
+        
+        // Get hook objects.
+        $hookObjects = tx_dlf_helper::getHookObjects('common/class.tx_dlf_document.php');
+        
+        // Apply hooks.
+        foreach ($hookObjects as $hookObj) {
+            
+            if (method_exists($hookObj, 'construct_postProcessRecordId')) {
+                
+                $hookObj->construct_postProcessRecordId($this->xml, $this->recordId);
+                
+            }
+            
         }
-
-        // Get document PID and location from database.
-        $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-            'tx_dlf_documents.uid AS uid,tx_dlf_documents.pid AS pid,tx_dlf_documents.record_id AS record_id,tx_dlf_documents.partof AS partof,tx_dlf_documents.thumbnail AS thumbnail,tx_dlf_documents.location AS location',
-            'tx_dlf_documents',
-            $whereClause,
-            '',
-            '',
-            '1'
-        );
-
-        if ($GLOBALS['TYPO3_DB']->sql_num_rows($result) > 0) {
-
-            list ($this->uid, $this->pid, $this->recordId, $this->parentId, $this->thumbnail, $this->location) = $GLOBALS['TYPO3_DB']->sql_fetch_row($result);
-
-            $this->thumbnailLoaded = TRUE;
-
-            // Load XML file if necessary...
-            if ($this->mets === NULL && $this->load($this->location)) {
-
-                // ...and set some basic properties.
-                $this->init();
-
-            }
-
-            // Do we have a METS object now?
-            if ($this->mets !== NULL) {
-
-                // Set new location if necessary.
-                if (!empty($location)) {
-
-                    $this->location = $location;
-
-                }
-
-                // Document ready!
-                $this->ready = TRUE;
-
-            }
-
-        } elseif ($this->mets !== NULL) {
-
-            // Set location as UID for documents not in database.
-            $this->uid = $location;
-
-            $this->location = $location;
-
-            // Document ready!
-            $this->ready = TRUE;
-
-        } else {
-
-            if (TYPO3_DLOG) {
-
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->__construct('.$uid.', '.$pid.')] No document with UID "'.$uid.'" found or document not accessible', self::$extKey, SYSLOG_SEVERITY_ERROR);
-
-            }
-
-        }
-
+        
     }
 
     /**

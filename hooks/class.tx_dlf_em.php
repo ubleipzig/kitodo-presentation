@@ -617,13 +617,25 @@ class tx_dlf_em {
         }
 
         // Add IIIF Presentation 2.0 context
-        if (!$nsDefined['IIIF']) {
+        if (!$nsDefined['IIIF2']) {
             
             $data['tx_dlf_formats'][uniqid('NEW')] = array (
                 'pid' => 0,
-                'type' => 'IIIF',
+                'type' => 'IIIF2',
                 'root' => 'none',
                 'namespace' => 'http://iiif.io/api/presentation/2/context.json',
+                'class' => 'none'
+            );
+            
+        }
+        
+        if (!$nsDefined['IIIF3']) {
+            
+            $data['tx_dlf_formats'][uniqid('NEW')] = array (
+                'pid' => 0,
+                'type' => 'IIIF3',
+                'root' => 'none',
+                'namespace' => 'http://iiif.io/api/presentation/3/context.json',
                 'class' => 'none'
             );
             
