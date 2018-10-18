@@ -197,7 +197,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             
                             /* @var $canvas Canvas */
                             
-                            $thumbnailUrl = IiifReader::getThumbnailUrlForIiifResource($canvas, $serviceProfileCache, GeneralUtility::class);
+                            $thumbnailUrl = IiifHelper::getThumbnailUrlForIiifResource($canvas, 100, null, $serviceProfileCache, GeneralUtility::class);
                             
                             // put thumbnails in thumbnail filegroup
                             if (isset($thumbnailUrl)) {
@@ -535,7 +535,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         $dummy = array();
         
-        $details['thumbnailId'] = IiifReader::getThumbnailUrlForIiifResource($resource, $dummy, GeneralUtility::class);
+        $details['thumbnailId'] = IiifHelper::getThumbnailUrlForIiifResource($resource, 100, null, $dummy, GeneralUtility::class);
         
         $details['points'] = '';
 
