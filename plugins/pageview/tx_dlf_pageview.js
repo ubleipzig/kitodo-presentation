@@ -53,7 +53,14 @@ var dlfViewer = function(settings){
      * @private
      */
     this.fulltexts = dlfUtils.exists(settings.fulltexts) ? settings.fulltexts : [];
-
+    
+    /**
+     * IIIF annotation lists URLs for the current canvas
+     * @type {Array.<string|?>}
+     * @private
+     */
+    this.annotationLists = dlfUtils.exists(settings.annotationLists) ? settings.annotationLists : [];
+    
     /**
      * @type {Array.<number>}
      * @private
@@ -144,17 +151,21 @@ var dlfViewer = function(settings){
  */
 dlfViewer.prototype.addCustomControls = function(controlNames) {
 	var fulltextControl = undefined,
+	    annotationControl = undefined,
 		imageManipulationControl = undefined,
 		images = this.images;
 
     // Adds fulltext behavior only if there is fulltext available and no double page
     // behavior is active
-    if (this.fulltexts[0] !== undefined && this.fulltexts[0].url !== '' && this.images.length == 1) {
+    if (this.fulltexts[0] !== undefined && this.fulltexts[0].url != null && this.fulltexts[0].url !== '' && this.images.length == 1) {
         fulltextControl = new dlfViewerFullTextControl(this.map, this.images[0], this.fulltexts[0].url);
+    } else if (this.annotationLists[0] !== undefined && this.annotationLists[0].annotationLists !== undefined && this.annotationLists[0].annotationLists.length > 0 && this.images.length == 1) {
+    	// Adds annotation behavior only if there are annotations available and vie is single page
+    	annotationControl = new DlfAnnotationControl(this.map, this.images[0], this.annotationLists[0]);
     } else {
         $('#tx-dlf-tools-fulltext').remove();
+        // $('#tx-dlf-tools-annotation').remove();
     }
-
 
     //
     // Add image manipulation tool if container is added.

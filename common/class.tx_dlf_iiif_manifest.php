@@ -15,7 +15,6 @@ use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
 use iiif\presentation\IiifHelper;
 use iiif\presentation\common\model\AbstractIiifEntity;
-use iiif\presentation\v2\model\helper\IiifReader;
 use iiif\presentation\v2\model\resources\AbstractIiifResource;
 use iiif\presentation\v2\model\resources\Annotation;
 use iiif\presentation\v2\model\resources\AnnotationList;
@@ -26,11 +25,7 @@ use iiif\presentation\v2\model\resources\Manifest;
 use iiif\presentation\v2\model\resources\Range;
 use iiif\presentation\v2\model\vocabulary\Motivation;
 use iiif\presentation\v2\model\vocabulary\Types;
-use iiif\presentation\v3\model\resources\AnnotationPage3;
-use iiif\presentation\v3\model\resources\Canvas3;
-use iiif\presentation\v3\model\resources\Collection3;
-use iiif\presentation\v3\model\resources\ContentResource3;
-use iiif\presentation\v3\model\resources\Manifest3;
+use iiif\services\AbstractImageService;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -60,6 +55,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      * @access protected
      */
     protected $originalMetadataArray = array ();
+    
+    protected $mimeTypes = [];
     
     /**
      * The extension key
@@ -223,7 +220,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             }
                             
                             $this->ensureHasFulltextIsSet();
-                            
+
                             if ($this->hasFulltext && isset($fileUseFulltext) && $canvas->getOtherContent() != null) {
                                 
                                 foreach ($canvas->getOtherContent() as $annotationList) {
@@ -285,6 +282,30 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                                 
                             }
                             
+                            $formatOrProfiles = [
+                                "application/alto+xm",
+                                "https://www.loc.gov/standards/alto/"
+                            ];
+                            
+                            if (isset($fileUseFulltext)) {
+                                
+                                $alto = $canvas->getSeeAlsoForProfileOrFormat($formatOrProfiles);
+                                
+                                if (!empty($alto)) {
+                                    
+                                    // FIXME use all possible alto files?
+                                    
+                                    $this->mimeTypes[$alto[0]] = "application/alto+xml";
+                                    
+                                    $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseFulltext] = $alto[0];
+                                    
+                                    $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseFulltext] = $alto[0];
+                                    
+                                }
+                            
+                            }
+                            
+                            
                             if (isset($fileUses)) {
                                 
                                 foreach ($fileUses as $fileUse) {
@@ -292,7 +313,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                                     // $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUse] = $image->getResource()->getService()->getId();
                                     
                                     $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUse] = $image->getResource()->getId();
-                                    
                                     
                                 }
                             }
@@ -354,6 +374,10 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
                 return $resource->getService()->getId();
                 
+            } elseif ($resource instanceof AbstractImageService) {
+                
+                return $resource->getId();
+                
             } elseif ($resource instanceof AnnotationList) {
                 
                 return $id;
@@ -390,6 +414,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             
         } elseif ($fileResource instanceof ContentResource) {
+            
+            // $format = $fileResource->getFormat();
+            
+            $format = "application/vnd.kitodo.iiif";
+            
+        } elseif ($fileResource instanceof AbstractImageService) {
             
             // $format = $fileResource->getFormat();
             
@@ -1099,10 +1129,23 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     
     protected function ensureHasFulltextIsSet()
     {
+        /*
+         *  TODO Check "seeAlso" of manifest and canvas for ALTO documents.
+         *  See https://github.com/altoxml/schema/issues/40 and https://github.com/altoxml/board/wiki/The-'application-alto-xml'-Media-Type
+         *  seeAlso.format = "application/alto+xml" (which is not a registered mime type) or seeAlso.profile = "http://www.loc.gov/standards/alto/v?"
+         */ 
         
-        if (!$this->hasFulltextSet && $this->iiif instanceof Manifest)
+        /*
+         *  TODO Check annotations and annotation lists of canvas for ALTO documents.
+         *  Example:
+         *  https://digi.ub.uni-heidelberg.de/diglit/iiif/hirsch_hamburg1933_04_25/manifest.json links
+         *  https://digi.ub.uni-heidelberg.de/diglit/iiif/hirsch_hamburg1933_04_25/list/0001.json
+         */
         
-        {
+        
+        // FIXME annotations for painting do not necessarily contain fulltext.
+        if (!$this->hasFulltextSet && $this->iiif instanceof Manifest) {
+            
             $manifest = $this->iiif;
             
             /* @var $manifest \iiif\presentation\v2\model\resources\Manifest */

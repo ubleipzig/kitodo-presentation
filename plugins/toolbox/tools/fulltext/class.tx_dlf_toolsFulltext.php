@@ -94,7 +94,7 @@ class tx_dlf_toolsFulltext extends tx_dlf_plugin {
                     .$this->pi_getLL('fulltext-off', '', TRUE).'">&nbsp;</a>';
         } elseif ($annotationLists != null && sizeof($annotationLists)>0) {
             // TODO unify or keep this separated?
-            $markerArray['###FULLTEXT_SELECT###'] = '<a class="select switchoff" id="tx-dlf-tools-fulltext-anno" title="" data-dic="fulltext-anno-on:'
+            $markerArray['###FULLTEXT_SELECT###'] = '<a class="select switchoff" id="tx-dlf-tools-annotation" title="" data-dic="fulltext-anno-on:'
                 .$this->pi_getLL('fulltext-on', '', TRUE).';fulltext-anno-off:'
                     .$this->pi_getLL('fulltext-off', '', TRUE).'">&nbsp;</a>';
         } else {

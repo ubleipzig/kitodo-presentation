@@ -83,6 +83,10 @@ class tx_dlf_pageview extends tx_dlf_plugin {
 
         $output[] = '<script type="text/javascript" src="'.\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::siteRelPath($this->extKey).'plugins/pageview/tx_dlf_pageview_fulltext_control.js"></script>';
 
+        $output[] = '<script type="text/javascript" src="'.\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::siteRelPath($this->extKey).'plugins/pageview/tx_dlf_text_annotation_parser.js"></script>';
+        
+        $output[] = '<script type="text/javascript" src="'.\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::siteRelPath($this->extKey).'plugins/pageview/tx_dlf_pageview_annotation_control.js"></script>';
+        
         $output[] = '<script type="text/javascript" src="'.\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::siteRelPath($this->extKey).'plugins/pageview/tx_dlf_pageview.js"></script>';
 
         // Add viewer configuration.
@@ -294,6 +298,8 @@ class tx_dlf_pageview extends tx_dlf_plugin {
     protected function getFulltext($page) {
 
         $fulltext = array ();
+        
+        // TODO check iiif annotations and "seeAlso" of manifest, sequence or canvases for ALTO fulltext files
 
         // Get fulltext link.
         if (!empty($this->doc->physicalStructureInfo[$this->doc->physicalStructure[$page]]['files'][$this->conf['fileGrpFulltext']])) {
@@ -340,7 +346,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                 
                 if ($canvas!=null && $canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
                     
-                    $result = array();
+                    $annotationLists = array();
                     
                     foreach ($canvas->getOtherContent() as $annotationList) {
                         
@@ -354,8 +360,11 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                                     && $annotation->getResource() != null 
                                     && $annotation->getResource()->getFormat() == "text/plain"
                                     && $annotation->getResource()->getChars() != null) {
-                                    
-                                        $result[] = $annotationList->getId();
+                                        $annotationListData = [];
+                                        $annotationListData["uri"] = $annotationList->getId();
+                                        $annotationListData["label"] = $annotationList->getTranslatedLabel();
+                                        
+                                        $annotationLists[] = $annotationListData;
                                         
                                         break;
                                     
@@ -367,11 +376,16 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                         
                     }
                     
-                    if (sizeof($annotationList)>0) {
-                        
-                        return $result;
-                        
-                    }
+                    $result = [
+                        "canvas" => [
+                            "id" => $canvas->getId(),
+                            "width" => $canvas->getWidth(),
+                            "height" => $canvas->getHeight(),
+                        ],
+                        "annotationLists"=>$annotationLists
+                    ];
+                    
+                    return $result;
                         
                 }
                 
