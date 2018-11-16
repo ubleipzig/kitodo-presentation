@@ -319,12 +319,14 @@ abstract class tx_dlf_document {
             $location = (string) $uid;
             
             // Try to load a file from the url
-            // FIXME double loading and processing of files is inefficient
+            // FIXME double loading and processing of files is inefficient - keep the raw doc or xml/iiif object somewhere
             if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location)) {
                 
                 $content = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($location);
                 
-                if (strpos(strtolower($content), "<?xml")===0 && ($xml = @simplexml_load_string($content)) !== false) {
+                $xml = simplexml_load_string($content, null, LIBXML_NOWARNING+LIBXML_NOERROR+LIBXML_ERR_FATAL+LIBXML_ERR_WARNING+LIBXML_ERR_NONE);
+                
+                if ($xml !== false) {
                     
                     /* @var $xml SimpleXMLElement */
                     $xml->registerXPathNamespace('mets', 'http://www.loc.gov/METS/');
@@ -337,21 +339,25 @@ abstract class tx_dlf_document {
                     
                     $contentAsJsonArray = json_decode($content, true);
                     
-                    if (!class_exists('\\iiif\\presentation\\IiifHelper', false)) {
+                    if ($contentAsJsonArray !== null) {
                         
-                        require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
+                        if (!class_exists('\\iiif\\presentation\\IiifHelper', false)) {
+                            
+                            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
+                            
+                        }
                         
-                    }
-                    
-                    $iiif = IiifHelper::loadIiifResource($contentAsJsonArray);
-                    
-                    if ($iiif instanceof AbstractIiifResource) {
+                        $iiif = IiifHelper::loadIiifResource($contentAsJsonArray);
                         
-                        return 'IIIF2';
-                        
-                    } elseif ($iiif instanceof AbstractIiifResource3) {
-                        
-                        return 'IIIF3';
+                        if ($iiif instanceof AbstractIiifResource) {
+                            
+                            return 'IIIF2';
+                            
+                        } elseif ($iiif instanceof AbstractIiifResource3) {
+                            
+                            return 'IIIF3';
+                            
+                        }
                         
                     }
                     
