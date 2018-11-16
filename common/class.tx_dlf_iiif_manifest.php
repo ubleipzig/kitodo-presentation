@@ -294,14 +294,15 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                                 
                             }
                             
-                            $formatOrProfiles = [
-                                "application/alto+xm",
-                                "https://www.loc.gov/standards/alto/"
-                            ];
-                            
                             if (isset($fileUseFulltext)) {
                                 
-                                $alto = $canvas->getSeeAlsoForProfileOrFormat($formatOrProfiles);
+                                $alto = $canvas->getSeeAlsoUrlsForFormat("application/alto+xml");
+                                
+                                if (empty($alto)) {
+                                    
+                                    $alto = $canvas->getSeeAlsoUrlsForProfile("http://www.loc.gov/standards/alto/", true);
+                                    
+                                }
                                 
                                 if (!empty($alto)) {
                                     
