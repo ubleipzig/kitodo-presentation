@@ -173,7 +173,19 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     // TODO check nescessity
                     $this->physicalStructureInfo[$physSeq[0]]['contentIds'] = null;
                     
-                    // $this->physicalStructureInfo[$physSeq[0]['']] = ;
+                    $fileUseDownload = $this->getUseGroups('fileGrpDownload');
+                    
+                    if (isset($fileUseDownload)) {
+                        
+                        $docPdfRendering = $this->iiif->getRenderingUrlsForFormat('application/pdf');
+                        
+                        if (!empty($docPdfRendering)) {
+                            
+                            $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseDownload] = $docPdfRendering[0];
+                            
+                        }
+                        
+                    }
                     
                     if ($sequence->getCanvases() != null && sizeof($sequence->getCanvases() > 0)) {
                         
@@ -323,14 +335,17 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                                 
                             }
                             
-                            // TODO Check if it is possible to look for pdf downloads in the services and put found service urls in the download group
-                            /*
-                            *
-                            * - should be contained in "rendering" property
-                            * - format "application/pdf"
-                            * - pdf for work might be contained in mainifest or default sequence; pdf for page might be in canvas or image resource
-                            *
-                            */
+                            if (isSet($fileUseDownload)) {
+                                
+                                $pdfRenderingUrls = $canvas->getRenderingUrlsForFormat('application/pdf');
+                                
+                                if (!empty($pdfRenderingUrls)) {
+                                    
+                                    $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseDownload] = $pdfRenderingUrls[0];
+
+                                }
+                                
+                            }
                             
                         }
                         
