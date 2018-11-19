@@ -26,6 +26,7 @@ use iiif\presentation\v2\model\resources\Range;
 use iiif\presentation\v2\model\vocabulary\Motivation;
 use iiif\presentation\v2\model\vocabulary\Types;
 use iiif\services\AbstractImageService;
+use iiif\presentation\v2\model\constants\ViewingHintValues;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -502,16 +503,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $logUnits[] = $this->iiif;
             
-            if ($this->iiif instanceof Manifest && $this->iiif->getTopRanges()!=null) {
-                
-                foreach ($this->iiif->getTopRanges() as $range) {
-
-                    $logUnits[] = $range;
-                    
-                }
-                
-            }
-            
         }
 
         if (!empty($logUnits)) {
@@ -522,7 +513,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
             } else {
                 
-                // cache the ranges - they might occure multiple times in the strucures "tree" - with full data as well as referenced as id
+                // cache the ranges - they might occure multiple times in the structures "tree" - with full data as well as referenced as id
                 $processedStructures = array();
                 
                 foreach ($logUnits as $logUnit) {
@@ -652,9 +643,29 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $details['children'] = array ();
             
-            if ($resource instanceof Manifest && $resource->getTopRanges()!=null) {
+            if ($resource instanceof Manifest && $resource->getTopRanges() != null) {
+
+                $rangesToAdd = [];
+                
+                $rootRanges = [];
+                
+                if (sizeof($this->iiif->getTopRanges()) ==1 && $this->iiif->getTopRanges()[0]->getViewingHint() == ViewingHintValues::TOP) {
                     
-                foreach ($resource->getTopRanges() as $range)
+                    $rangesToAdd = $this->iiif->getTopRanges()[0]->getMemberRangesAndRanges();
+                    
+                } else {
+                    
+                    $rangesToAdd = $this->iiif->getTopRanges();
+                    
+                }
+                
+                foreach ($rangesToAdd as $range) {
+                    
+                    $rootRanges[] = $range;
+                    
+                }
+                
+                foreach ($rootRanges as $range)
                 {
 
                     if ((array_search($range->getId(), $processedStructures) == false)) {
@@ -928,16 +939,13 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         // map range's canvases including all child ranges' canvases
         
-        foreach ($range->getAllCanvases() as $canvas) {
+        if (empty($range->getViewingHint()) || $range->getViewingHint()!=ViewingHintValues::TOP) {
             
-            if ($canvas == null) {
+            foreach ($range->getAllCanvases() as $canvas) {
                 
-                // just for breakpoint
-                echo "soso";
+                $this->smLinkCanvasToResource($canvas, $range);
                 
             }
-            
-            $this->smLinkCanvasToResource($canvas, $range);
             
         }
         
