@@ -322,6 +322,16 @@ abstract class tx_dlf_document {
             // FIXME double loading and processing of files is inefficient - keep the raw doc or xml/iiif object somewhere
             if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location)) {
                 
+                // Load extension configuration
+                $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['dlf']);
+                
+                // Set user-agent to identify self when fetching XML data.
+                if (!empty($extConf['useragent'])) {
+                    
+                    @ini_set('user_agent', $extConf['useragent']);
+                    
+                }
+                
                 $content = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($location);
                 
                 $xml = simplexml_load_string($content, null, LIBXML_NOWARNING+LIBXML_NOERROR+LIBXML_ERR_FATAL+LIBXML_ERR_WARNING+LIBXML_ERR_NONE);
