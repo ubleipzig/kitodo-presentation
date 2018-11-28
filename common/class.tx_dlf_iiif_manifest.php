@@ -14,24 +14,24 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
 use iiif\presentation\IiifHelper;
-use iiif\presentation\common\model\AbstractIiifEntity;
-use iiif\presentation\v2\model\resources\AbstractIiifResource;
-use iiif\presentation\v2\model\resources\Annotation;
+use iiif\presentation\common\model\resources\CanvasInterface;
+use iiif\presentation\common\model\resources\ManifestInterface;
+use iiif\presentation\v2\model\constants\ViewingHintValues;
 use iiif\presentation\v2\model\resources\AnnotationList;
-use iiif\presentation\v2\model\resources\Canvas;
 use iiif\presentation\v2\model\resources\Collection;
-use iiif\presentation\v2\model\resources\ContentResource;
-use iiif\presentation\v2\model\resources\Manifest;
-use iiif\presentation\v2\model\resources\Range;
 use iiif\presentation\v2\model\vocabulary\Motivation;
 use iiif\presentation\v2\model\vocabulary\Types;
 use iiif\services\AbstractImageService;
-use iiif\presentation\v2\model\constants\ViewingHintValues;
+use iiif\presentation\common\model\resources\ContentResourceInterface;
+use iiif\presentation\common\model\resources\AnnotationInterface;
+use iiif\presentation\common\model\resources\IiifResourceInterface;
+use iiif\presentation\common\model\resources\RangeInterface;
+use iiif\presentation\v2\model\resources\Range;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
     /**
-     * This holds the whole XML file as string for serialization purposes
+     * This holds the manifest file as string for serialization purposes
      * @see __sleep() / __wakeup()
      *
      * @var	string
@@ -41,7 +41,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
 
     /**
      * 
-     * @var Manifest
+     * @var ManifestInterface
      */
     protected $iiif;
 
@@ -146,217 +146,207 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         // Is there no physical structure array yet?
         if (!$this->physicalStructureLoaded) {
             
-            if ($this->iiif == null || !($this->iiif instanceof Manifest)) return null;
+            if ($this->iiif == null || !($this->iiif instanceof ManifestInterface)) return null;
             
             if ($this->iiif != null) {
                 
-                if (($this->iiif->getSequences() !== null && is_array($this->iiif->getSequences()) && sizeof($this->iiif->getSequences())>0))
-                {
-                    $sequence = $this->iiif->getSequences()[0];
+                $iiifId = $this->iiif->getId();
+                
+                $physSeq[0] = $iiifId;
+                
+                $this->physicalStructureInfo[$physSeq[0]]['id'] = $iiifId;
+                
+                $this->physicalStructureInfo[$physSeq[0]]['dmdId'] = $iiifId;
+                
+                // TODO translation?
+                $this->physicalStructureInfo[$physSeq[0]]['label'] = $this->iiif->getDefaultLabel();
+                
+                // TODO translation?
+                $this->physicalStructureInfo[$physSeq[0]]['orderlabel'] = $this->iiif->getDefaultLabel();
+                
+                $this->physicalStructureInfo[$physSeq[0]]['type'] = 'physSequence';
+                
+                // TODO check nescessity
+                $this->physicalStructureInfo[$physSeq[0]]['contentIds'] = null;
+                
+                $fileUseDownload = $this->getUseGroups('fileGrpDownload');
+                
+                if (isset($fileUseDownload)) {
                     
-                    /* @var $sequence \iiif\presentation\v2\model\resources\Sequence */
-                    $sequenceId = $sequence->getId();
+                    $docPdfRendering = $this->iiif->getRenderingUrlsForFormat('application/pdf');
                     
-                    $physSeq[0] = $sequenceId;
-                    
-                    $this->physicalStructureInfo[$physSeq[0]]['id'] = $sequenceId;
-                    
-                    $this->physicalStructureInfo[$physSeq[0]]['dmdId'] = $sequenceId;
-                    
-                    // TODO translation?
-                    $this->physicalStructureInfo[$physSeq[0]]['label'] = $sequence->getDefaultLabel();
-                    
-                    // TODO translation?
-                    $this->physicalStructureInfo[$physSeq[0]]['orderlabel'] = $sequence->getDefaultLabel();
-                    
-                    $this->physicalStructureInfo[$physSeq[0]]['type'] = 'physSequence';
-                    
-                    // TODO check nescessity
-                    $this->physicalStructureInfo[$physSeq[0]]['contentIds'] = null;
-                    
-                    $fileUseDownload = $this->getUseGroups('fileGrpDownload');
-                    
-                    if (isset($fileUseDownload)) {
+                    if (!empty($docPdfRendering)) {
                         
-                        $docPdfRendering = $this->iiif->getRenderingUrlsForFormat('application/pdf');
-                        
-                        if (!empty($docPdfRendering)) {
-                            
-                            $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseDownload] = $docPdfRendering[0];
-                            
-                        }
+                        $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseDownload] = $docPdfRendering[0];
                         
                     }
                     
-                    if ($sequence->getCanvases() != null && sizeof($sequence->getCanvases() > 0)) {
+                }
+                
+                if (!empty($this->iiif->getDefaultCanvases())) {
+                    
+                    // canvases have not order property, but the context defines canveses as @list with a specific order, so we can provide an alternative
+                    $canvasOrder = 0;
+                    
+                    $fileUseThumbs = $this->getUseGroups('fileGrpThumbs');
+                    
+                    $fileUses = $this->getUseGroups('fileGrps');
+                    
+                    $fileUseFulltext = $this->getUseGroups('fileGrpFulltext');
+                    
+                    $serviceProfileCache = [];
+                    
+                    foreach ($this->iiif->getDefaultCanvases() as $canvas) {
                         
-                        // canvases have not order property, but the context defines canveses as @list with a specific order, so we can provide an alternative
-                        $canvasOrder = 0;
+                        $canvasOrder++;
                         
-                        $fileUseThumbs = $this->getUseGroups('fileGrpThumbs');
+                        $thumbnailUrl = $canvas->getThumbnailUrl();
                         
-                        $fileUses = $this->getUseGroups('fileGrps');
-                        
-                        $fileUseFulltext = $this->getUseGroups('fileGrpFulltext');
-                        
-                        $serviceProfileCache = [];
-                        
-                        foreach ($sequence->getCanvases() as $canvas) {
+                        // put thumbnails in thumbnail filegroup
+                        if (isset($thumbnailUrl)) {
                             
-                            $canvasOrder++;
+                            $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseThumbs] = $thumbnailUrl;
                             
-                            /* @var $canvas Canvas */
+                        }
+                        
+                        $image = $canvas->getImageAnnotations()[0];
+                        
+                        // put images in all non specific filegroups
+                        if (isset($fileUses)) {
                             
-                            $thumbnailUrl = IiifHelper::getThumbnailUrlForIiifResource($canvas, 100, null, $serviceProfileCache, GeneralUtility::class);
-                            
-                            // put thumbnails in thumbnail filegroup
-                            if (isset($thumbnailUrl)) {
+                            foreach ($fileUses as $fileUse) {
                                 
-                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseThumbs] = $thumbnailUrl;
+                                // $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getResource()->getService()->getId();
+                                
+                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getBody()->getId();
                                 
                             }
-                            
-                            $image = $canvas->getImages()[0];
-                            
-                            /* @var $image iiif\presentation\v2\model\resources\Annotation */
-                            
-                            // put images in all non specific filegroups
-                            if (isset($fileUses)) {
-                                
-                                foreach ($fileUses as $fileUse) {
-                                    
-                                    // $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getResource()->getService()->getId();
-                                    
-                                    $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getResource()->getId();
-                                    
-                                }
-                            }
-                            
-                            $this->ensureHasFulltextIsSet();
+                        }
+                        
+                        $this->ensureHasFulltextIsSet();
 
-                            if ($this->hasFulltext && isset($fileUseFulltext) && $canvas->getOtherContent() != null) {
+//                             if ($this->hasFulltext && isset($fileUseFulltext) && $canvas->getOtherContent() != null) {
                                 
-                                foreach ($canvas->getOtherContent() as $annotationList) {
+//                                 foreach ($canvas->getOtherContent() as $annotationList) {
                                     
-                                    if ($annotationList->getResources() != null) {
+//                                     if ($annotationList->getResources() != null) {
                                         
-                                        foreach ($annotationList->getResources() as $annotation) {
+//                                         foreach ($annotationList->getResources() as $annotation) {
                                             
-                                            /* @var  $annotation \iiif\presentation\v2\model\resources\Annotation */
-                                            if ($annotation->getMotivation() == Motivation::PAINTING &&
-                                                $annotation->getResource() != null &&
-                                                $annotation->getResource()->getFormat() == "text/plain" &&
-                                                $annotation->getResource()->getChars() != null) {
+//                                             /* @var  $annotation \iiif\presentation\v2\model\resources\Annotation */
+//                                             if ($annotation->getMotivation() == Motivation::PAINTING &&
+//                                                 $annotation->getResource() != null &&
+//                                                 $annotation->getResource()->getFormat() == "text/plain" &&
+//                                                 $annotation->getResource()->getChars() != null) {
                                                     
-                                                    $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseFulltext][] = $annotationList->getId();
+//                                                     $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseFulltext][] = $annotationList->getId();
                                                     
-                                                    $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseFulltext][] = $annotationList->getId();
+//                                                     $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseFulltext][] = $annotationList->getId();
                                                     
-                                                    break;
+//                                                     break;
                                                     
-                                                }
+//                                                 }
                                                 
-                                        }
+//                                         }
                                         
-                                    }
+//                                     }
                                     
-                                }
+//                                 }
                                 
-                            }
+//                             }
                             
-                            // populate structural metadata info
-                            $elements[$canvasOrder] = $canvas->getId();
+                        // populate structural metadata info
+                        $elements[$canvasOrder] = $canvas->getId();
+                        
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['id']=$canvas->getId();
+                        
+                        // TODO check replacement
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['dmdId']=null;
+                        
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['label']=$canvas->getDefaultLabel();
+                        
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['orderlabel']=$canvas->getDefaultLabel();
+                        
+                        // assume that a canvas always represents a page
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['type']='page';
+                        
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['contentIds']=null;
+                        
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'] = null;
+                        
+                        if ($canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
                             
-                            $this->physicalStructureInfo[$elements[$canvasOrder]]['id']=$canvas->getId();
+                            $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'] = array();
                             
-                            // TODO check replacement
-                            $this->physicalStructureInfo[$elements[$canvasOrder]]['dmdId']=null;
-                            
-                            $this->physicalStructureInfo[$elements[$canvasOrder]]['label']=$canvas->getDefaultLabel();
-                            
-                            $this->physicalStructureInfo[$elements[$canvasOrder]]['orderlabel']=$canvas->getDefaultLabel();
-                            
-                            // assume that a canvas always represents a page
-                            $this->physicalStructureInfo[$elements[$canvasOrder]]['type']='page';
-                            
-                            $this->physicalStructureInfo[$elements[$canvasOrder]]['contentIds']=null;
-                            
-                            $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'] = null;
-                            
-                            if ($canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
+                            // TODO abstraction for AnnotationList / AnnotationPage
+                            foreach ($canvas->getOtherContent() as $annotationList) {
                                 
-                                $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'] = array();
-                                
-                                foreach ($canvas->getOtherContent() as $annotationList) {
-                                    
-                                    $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'][] = $annotationList->getId();
-                                    
-                                }
-                                
-                            }
-                            
-                            if (isset($fileUseFulltext)) {
-                                
-                                $alto = $canvas->getSeeAlsoUrlsForFormat("application/alto+xml");
-                                
-                                if (empty($alto)) {
-                                    
-                                    $alto = $canvas->getSeeAlsoUrlsForProfile("http://www.loc.gov/standards/alto/", true);
-                                    
-                                }
-                                
-                                if (!empty($alto)) {
-                                    
-                                    // FIXME use all possible alto files?
-                                    
-                                    $this->mimeTypes[$alto[0]] = "application/alto+xml";
-                                    
-                                    $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseFulltext] = $alto[0];
-                                    
-                                    $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseFulltext] = $alto[0];
-                                    
-                                }
-                            
-                            }
-                            
-                            
-                            if (isset($fileUses)) {
-                                
-                                foreach ($fileUses as $fileUse) {
-                                    
-                                    // $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUse] = $image->getResource()->getService()->getId();
-                                    
-                                    $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUse] = $image->getResource()->getId();
-                                    
-                                }
-                            }
-                            
-                            if (isset($thumbnailUrl)) {
-                                
-                                $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseThumbs] = $thumbnailUrl;
-                                
-                            }
-                            
-                            if (isSet($fileUseDownload)) {
-                                
-                                $pdfRenderingUrls = $canvas->getRenderingUrlsForFormat('application/pdf');
-                                
-                                if (!empty($pdfRenderingUrls)) {
-                                    
-                                    $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseDownload] = $pdfRenderingUrls[0];
-
-                                }
+                                $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'][] = $annotationList->getId();
                                 
                             }
                             
                         }
                         
-                        $this->numPages = $canvasOrder;
+                        if (isset($fileUseFulltext)) {
+                            
+                            $alto = $canvas->getSeeAlsoUrlsForFormat("application/alto+xml");
+                            
+                            if (empty($alto)) {
+                                
+                                $alto = $canvas->getSeeAlsoUrlsForProfile("http://www.loc.gov/standards/alto/", true);
+                                
+                            }
+                            
+                            if (!empty($alto)) {
+                                
+                                // FIXME use all possible alto files?
+                                
+                                $this->mimeTypes[$alto[0]] = "application/alto+xml";
+                                
+                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseFulltext] = $alto[0];
+                                
+                                $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseFulltext] = $alto[0];
+                                
+                            }
                         
-                        // Merge and re-index the array to get nice numeric indexes.
-                        $this->physicalStructure = array_merge($physSeq, $elements);
+                        }
+                        
+                        
+                        if (isset($fileUses)) {
+                            
+                            foreach ($fileUses as $fileUse) {
+                                
+                                // $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUse] = $image->getResource()->getService()->getId();
+                                
+                                $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUse] = $image->getBody()->getId();
+                                
+                            }
+                        }
+                        
+                        if (isset($thumbnailUrl)) {
+                            
+                            $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseThumbs] = $thumbnailUrl;
+                            
+                        }
+                        
+                        if (isSet($fileUseDownload)) {
+                            
+                            $pdfRenderingUrls = $canvas->getRenderingUrlsForFormat('application/pdf');
+                            
+                            if (!empty($pdfRenderingUrls)) {
+                                
+                                $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseDownload] = $pdfRenderingUrls[0];
+
+                            }
+                            
+                        }
                         
                     }
+                    
+                    $this->numPages = $canvasOrder;
+                    
+                    // Merge and re-index the array to get nice numeric indexes.
+                    $this->physicalStructure = array_merge($physSeq, $elements);
                     
                 }
                 
@@ -383,11 +373,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         if (isset($resource)) {
             
-            if ($resource instanceof Canvas) {
+            if ($resource instanceof CanvasInterface) {
                 
-                return $resource->getImages()[0]->getService()->getId();
+                return $resource->getImageAnnotations()[0]->getService()->getId();
                 
-            } elseif ($resource instanceof ContentResource) {
+            } elseif ($resource instanceof ContentResourceInterface) {
                 
                 return $resource->getService()->getId();
                 
@@ -417,20 +407,20 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     {
         $fileResource = $this->iiif->getContainedResourceById($id);
         
-        if ($fileResource instanceof Canvas) {
+        if ($fileResource instanceof CanvasInterface) {
             
             // $format = $fileResource->getImages()[0]->getResource()->getFormat();
             
             $format = "application/vnd.kitodo.iiif";
             
-        } elseif ($fileResource instanceof Annotation) {
+        } elseif ($fileResource instanceof AnnotationInterface) {
             
             // $format = $fileResource->getResource()->getFormat();
             
             $format = "application/vnd.kitodo.iiif";
             
             
-        } elseif ($fileResource instanceof ContentResource) {
+        } elseif ($fileResource instanceof ContentResourceInterface) {
             
             // $format = $fileResource->getFormat();
             
@@ -535,7 +525,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     }
     
     
-    protected function getLogicalStructureInfo(AbstractIiifEntity $resource, $recursive = false, &$processedStructures = array()) {
+    protected function getLogicalStructureInfo(IiifResourceInterface $resource, $recursive = false, &$processedStructures = array()) {
         
         $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
         
@@ -572,7 +562,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         $dummy = array();
         
-        $details['thumbnailId'] = IiifHelper::getThumbnailUrlForIiifResource($resource, 100, null, $dummy, GeneralUtility::class);
+        $details['thumbnailId'] = $resource->getThumbnailUrl();
         
         $details['points'] = '';
 
@@ -584,13 +574,13 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         $canvases = array();
         
-        if ($resource instanceof Manifest) {
+        if ($resource instanceof ManifestInterface) {
 
-            $startCanvas = $resource->getSequences()[0]->getStartCanvasOrFirstCanvas();
+            $startCanvas = $resource->getStartCanvasOrFirstCanvas();
             
-            $canvases = $resource->getSequences()[0]->getCanvases();
+            $canvases = $resource->getDefaultCanvases();
             
-        } elseif ($resource instanceof Range) {
+        } elseif ($resource instanceof RangeInterface) {
             
             $startCanvas = $resource->getStartCanvasOrFirstCanvas();
             
@@ -602,7 +592,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $details['pagination'] = $startCanvas->getLabel();
             
-            $startCanvasIndex = array_search($startCanvas, $this->iiif->getSequences()[0]->getCanvases());
+            $startCanvasIndex = array_search($startCanvas, $this->iiif->getDefaultCanvases());
             
             if ($startCanvasIndex!==false) {
                 
@@ -643,13 +633,14 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $details['children'] = array ();
             
-            if ($resource instanceof Manifest && $resource->getTopRanges() != null) {
+            if ($resource instanceof ManifestInterface && $resource->getTopRanges() != null) {
 
                 $rangesToAdd = [];
                 
                 $rootRanges = [];
                 
-                if (sizeof($this->iiif->getTopRanges()) ==1 && $this->iiif->getTopRanges()[0]->getViewingHint() == ViewingHintValues::TOP) {
+                if (sizeof($this->iiif->getTopRanges()) == 1 && $this->iiif->getTopRanges()[0] instanceof Range 
+                    && $this->iiif->getTopRanges()[0]->getViewingHint() == ViewingHintValues::TOP) {
                     
                     $rangesToAdd = $this->iiif->getTopRanges()[0]->getMemberRangesAndRanges();
                     
@@ -676,29 +667,15 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     
                 }
                 
-            } elseif ($resource instanceof Range) {
+            } elseif ($resource instanceof RangeInterface) {
                 
-                if ($resource->getRanges() !== null && sizeof($resource->getRanges())>0) {
+                if (!empty($resource->getAllRanges())) {
 
-                    foreach ($resource->getRanges() as $range) {
+                    foreach ($resource->getAllRanges() as $range) {
                         
                         if ((array_search($range->getId(), $processedStructures) == false)) {
                             
                             $details['children'][] = $this->getLogicalStructureInfo($range, TRUE, $processedStructures);
-                            
-                        }
-                        
-                    }
-                    
-                }
-                
-                if ($resource->getMembers() !== null && sizeof($resource->getMembers())>0) {
-                    
-                    foreach ($resource->getMembers() as $member) {
-                        
-                        if ($member instanceof Range && (array_search($resource->getId(), $processedStructures) == false)) {
-                            
-                            $details['children'][] = $this->getLogicalStructureInfo($member, TRUE, $processedStructures);
                             
                         }
                         
@@ -739,6 +716,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
                 foreach ($iiifResource->getMetadata() as $metadatum)  {
                     
+                    // TODO abstraction
                     $result[$metadatum['label']] = $iiifResource->getMetadataForLabel($metadatum['label']);
                     
                 }
@@ -899,25 +877,19 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     
     protected function _getSmLinks() {
         
-        if (!$this->smLinksLoaded && isset($this->iiif) && $this->iiif instanceof Manifest) {
+        if (!$this->smLinksLoaded && isset($this->iiif) && $this->iiif instanceof ManifestInterface) {
             
-            if ($this->iiif->getSequences()!==null && sizeof($this->iiif->getSequences())>0) {
+            if (!empty($this->iiif->getDefaultCanvases())) {
                 
-                $sequenceCanvases = $this->iiif->getSequences()[0]->getCanvases();
-                
-                if ($sequenceCanvases != null && sizeof($sequenceCanvases) >0) {
+                foreach ($this->iiif->getDefaultCanvases() as $canvas) {
                     
-                    foreach ($this->iiif->getSequences()[0]->getCanvases() as $canvas) {
-                        
-                        $this->smLinkCanvasToResource($canvas, $this->iiif);
-                        
-                    }
-                        
+                    $this->smLinkCanvasToResource($canvas, $this->iiif);
+                    
                 }
                 
             }
             
-            if ($this->iiif->getStructures() !=null && sizeof($this->iiif->getStructures())>0) {
+            if (!empty($this->iiif->getStructures())) {
                 
                 foreach ($this->iiif->getStructures() as $range) {
                     
@@ -935,13 +907,13 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
     }
     
-    private function smLinkRangeCanvasesRecursively(Range $range) {
+    private function smLinkRangeCanvasesRecursively(RangeInterface $range) {
         
         // map range's canvases including all child ranges' canvases
         
-        if (empty($range->getViewingHint()) || $range->getViewingHint()!=ViewingHintValues::TOP) {
+        if (!($range instanceof Range) || empty($range->getViewingHint()) || $range->getViewingHint()!=ViewingHintValues::TOP) {
             
-            foreach ($range->getAllCanvases() as $canvas) {
+            foreach ($range->getAllCanvasesRecursively() as $canvas) {
                 
                 $this->smLinkCanvasToResource($canvas, $range);
                 
@@ -951,9 +923,9 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         // recursive call for all ranges
         
-        if ($range->getRanges()!==null && sizeof($range->getRanges())) {
+        if (!empty($range->getAllRanges())) {
             
-            foreach ($range->getRanges() as $childRange) {
+            foreach ($range->getAllRanges() as $childRange) {
                 
                 $this->smLinkRangeCanvasesRecursively($childRange);
                 
@@ -961,31 +933,9 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
         }
         
-        // iterate through members and map all member canvases, call self for all member ranges
-        
-        if ($range->getMembers()!==null && sizeof($range->getMembers())>0) {
-            
-            foreach ($range->getMembers() as $member) {
-                
-                if ($member instanceof Canvas) {
-                    
-                    $this->smLinkCanvasToResource($member, $range);
-                    
-                }
-                
-                if ($member instanceof Range) {
-                    
-                    $this->smLinkRangeCanvasesRecursively($member);
-                    
-                }
-                
-            }
-            
-        }
-        
     }
     
-    private function smLinkCanvasToResource(Canvas $canvas, AbstractIiifResource $resource)
+    private function smLinkCanvasToResource(CanvasInterface $canvas, IiifResourceInterface $resource)
     {
         
         $this->smLinks['l2p'][$resource->getId()][] = $canvas->getId();
@@ -1114,7 +1064,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         if ($resource != null ){
             
-            if ($resource instanceof Manifest || $resource instanceof Collection) {
+            if ($resource instanceof ManifestInterface || $resource instanceof Collection) {
                 
                 $this->iiif = $resource;
                 
@@ -1168,7 +1118,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         
         // FIXME annotations for painting do not necessarily contain fulltext.
-        if (!$this->hasFulltextSet && $this->iiif instanceof Manifest) {
+        if (!$this->hasFulltextSet && $this->iiif instanceof ManifestInterface) {
             
             $manifest = $this->iiif;
             
@@ -1250,7 +1200,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         if ($resource != null) {
             
-            if ($resource instanceof Manifest || $resource instanceof Collection) {
+            if ($resource instanceof ManifestInterface || $resource instanceof Collection) {
                 
                 $this->iiif = $resource;
                 
@@ -1269,7 +1219,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     }
 
     /**
-     * @return AbstractIiifResource
+     * @return IiifResourceInterface
      */
     public function getIiif()
     {
