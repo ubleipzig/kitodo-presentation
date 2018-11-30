@@ -1,4 +1,8 @@
 <?php
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use iiif\presentation\IiifHelper;
+use iiif\services\AbstractImageService;
+
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -144,6 +148,35 @@ final class tx_dlf_mets_document extends tx_dlf_document {
      */
     protected $xml;
 
+    public function getDownloadLocation($id) {
+        
+        $fileMimeType = $this->getFileMimeType($id);
+
+        $fileLocation = $this->getFileLocation($id);
+        
+        $fileLocation = strrpos($fileLocation, "info.json") == strlen($fileLocation) - 9 ? $fileLocation :
+            strrpos($fileLocation, "/") == strlen($fileLocation) ? $fileLocation."info.json" : $fileLocation."/info.json";
+        
+        switch ($fileMimeType) {
+            
+            case "application/vnd.kitodo.iiif":
+
+                $service = IiifHelper::loadIiifResource($fileLocation);
+                
+                if ($service != null && $service instanceof AbstractImageService) {
+                    
+                    return $service->getImageUrl();
+                    
+                }
+                
+            default:
+                
+                return $fileLocation;
+                
+        }
+        
+    }
+    
     /**
      * This gets the location of a file representing a physical page or track
      *

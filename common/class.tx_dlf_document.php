@@ -15,6 +15,7 @@ use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
 use iiif\presentation\IiifHelper;
 use iiif\presentation\v2\model\resources\AbstractIiifResource;
 use iiif\presentation\v3\model\resources\AbstractIiifResource3;
+use iiif\presentation\common\model\resources\IiifResourceInterface;
 
 /**
  * Document class 'tx_dlf_document' for the 'dlf' extension.
@@ -275,6 +276,9 @@ abstract class tx_dlf_document {
 
     protected abstract function establishRecordId();
 
+    /**
+     * @return SimpleXMLElement|IiifResourceInterface
+     */
     protected abstract function getDocument();
     
     protected static function getDocumentFormat($uid, $pid = 0)
@@ -380,6 +384,12 @@ abstract class tx_dlf_document {
         }
         
     }
+    
+    /**
+     * This gets the location of a downloadable file. 
+     * @param string $id
+     */
+    public abstract function getDownloadLocation($id);
     
     /**
      * This gets the location of a file representing a physical page or track

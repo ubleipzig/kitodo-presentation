@@ -360,6 +360,22 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
 
     }
 
+    public function getDownloadLocation($id) {
+        
+        $fileLocation = $this->getFileLocation($id);
+
+        $resource = $this->iiif->getContainedResourceById($fileLocation);
+         
+        if ($resource instanceof AbstractImageService) {
+            
+            return $resource->getImageUrl();
+            
+        }
+        
+        return $fileLocation;
+        
+    }
+    
     /**
      * {@inheritDoc}
      * @see tx_dlf_document::getFileLocation()
