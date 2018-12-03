@@ -333,8 +333,7 @@ return array (
                 'renderType' => 'selectSingle',
                 'items' => array (
                     array ('METS', 'METS'),
-                    array ('IIIF Version 2', 'IIIF2'),
-                    array ('IIIF Version 3', 'IIIF3'),
+                    array ('IIIF', 'IIIF'),
                 ),
                 'size' => 1,
                 'minitems' => 1,

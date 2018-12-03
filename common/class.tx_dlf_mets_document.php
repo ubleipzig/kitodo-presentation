@@ -1,5 +1,4 @@
 <?php
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 use iiif\presentation\IiifHelper;
 use iiif\services\AbstractImageService;
 
@@ -157,24 +156,25 @@ final class tx_dlf_mets_document extends tx_dlf_document {
         $fileLocation = strrpos($fileLocation, "info.json") == strlen($fileLocation) - 9 ? $fileLocation :
             strrpos($fileLocation, "/") == strlen($fileLocation) ? $fileLocation."info.json" : $fileLocation."/info.json";
         
-        switch ($fileMimeType) {
+        if ($fileMimeType == "application/vnd.kitodo.iiif") {
+        
+            if (!class_exists('\\iiif\\presentation\\IiifHelper', false)) {
+                
+                require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
+                
+            }
             
-            case "application/vnd.kitodo.iiif":
-
-                $service = IiifHelper::loadIiifResource($fileLocation);
+            $service = IiifHelper::loadIiifResource($fileLocation);
+            
+            if ($service != null && $service instanceof AbstractImageService) {
                 
-                if ($service != null && $service instanceof AbstractImageService) {
-                    
-                    return $service->getImageUrl();
-                    
-                }
+                return $service->getImageUrl();
                 
-            default:
-                
-                return $fileLocation;
-                
+            }
         }
         
+        return $fileLocation;
+
     }
     
     /**
@@ -233,29 +233,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
         }
 
-    }
-
-    /**
-     * This is a singleton class, thus an instance must be created by this method
-     *
-     * @access	protected
-     *
-     * @param	mixed		$uid: The unique identifier of the document to parse or URL of XML file
-     * @param	integer		$pid: If > 0, then only document with this PID gets loaded
-     * @param	boolean		$forceReload: Force reloading the document instead of returning the cached instance
-     *
-     * @return	&tx_dlf_document		Instance of this class
-     */
-    protected static function &getMetsInstance($uid, $pid = 0, $forceReload = FALSE) {
-
-        // Sanitize input.
-        $pid = max(intval($pid), 0);
-
-        // Create new instance...
-        $instance = new self($uid, $pid);
-
-        // Return new instance.
-        return $instance;
     }
 
     /**
@@ -974,6 +951,20 @@ final class tx_dlf_mets_document extends tx_dlf_document {
             }
             
         }
+    }
+    
+    protected function setPreloadedDocument($preloadedDocument) {
+        
+        if ($preloadedDocument instanceof SimpleXMLElement) {
+            
+            $this->xml = $preloadedDocument;
+            
+            return true;
+            
+        }
+        
+        return false;
+        
     }
 
     /**

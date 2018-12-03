@@ -13,8 +13,6 @@ use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_NOTICE;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
 use iiif\presentation\IiifHelper;
-use iiif\presentation\v2\model\resources\AbstractIiifResource;
-use iiif\presentation\v3\model\resources\AbstractIiifResource3;
 use iiif\presentation\common\model\resources\IiifResourceInterface;
 
 /**
@@ -281,110 +279,6 @@ abstract class tx_dlf_document {
      */
     protected abstract function getDocument();
     
-    protected static function getDocumentFormat($uid, $pid = 0)
-    {
-        if (\TYPO3\CMS\Core\Utility\MathUtility::canBeInterpretedAsInteger($uid)) {
-            
-            $whereClause = 'tx_dlf_documents.uid='.intval($uid).tx_dlf_helper::whereClause('tx_dlf_documents');
-            if ($pid) {
-                
-                $whereClause .= ' AND tx_dlf_documents.pid='.intval($pid);
-                
-            }
-            $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-                'tx_dlf_documents.location AS location,tx_dlf_documents.document_format AS document_format',
-                'tx_dlf_documents',
-                $whereClause,
-                '',
-                '',
-                '1'
-                );
-            
-            if ($GLOBALS['TYPO3_DB']->sql_num_rows($result) > 0) {
-                
-                for ($i = 0, $j = $GLOBALS['TYPO3_DB']->sql_num_rows($result); $i < $j; $i++) {
-                    
-                    $resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result);
-                    
-                    $documentFormat = $resArray['document_format'];
-                    
-                    if ($documentFormat == 'METS' || $documentFormat == 'IIIF2' || $documentFormat == 'IIIF3') {
-                        
-                        return $documentFormat;
-                        
-                    }
-                    
-                }
-                
-            }
-            
-        } else {
-            // Cast to string for safety reasons.
-            $location = (string) $uid;
-            
-            // Try to load a file from the url
-            // FIXME double loading and processing of files is inefficient - keep the raw doc or xml/iiif object somewhere
-            if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location)) {
-                
-                // Load extension configuration
-                $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['dlf']);
-                
-                // Set user-agent to identify self when fetching XML data.
-                if (!empty($extConf['useragent'])) {
-                    
-                    @ini_set('user_agent', $extConf['useragent']);
-                    
-                }
-                
-                $content = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($location);
-                
-                $xml = simplexml_load_string($content, null, LIBXML_NOWARNING+LIBXML_NOERROR+LIBXML_ERR_FATAL+LIBXML_ERR_WARNING+LIBXML_ERR_NONE);
-                
-                if ($xml !== false) {
-                    
-                    /* @var $xml SimpleXMLElement */
-                    $xml->registerXPathNamespace('mets', 'http://www.loc.gov/METS/');
-                    
-                    $xpathResult = $xml->xpath('//mets:mets');
-                    
-                    return ($xpathResult !== false && count($xpathResult)>0) ? 'METS' : null;
-                    
-                } else {
-                    
-                    $contentAsJsonArray = json_decode($content, true);
-                    
-                    if ($contentAsJsonArray !== null) {
-                        
-                        if (!class_exists('\\iiif\\presentation\\IiifHelper', false)) {
-                            
-                            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
-                            
-                        }
-                        
-                        $iiif = IiifHelper::loadIiifResource($contentAsJsonArray);
-                        
-                        if ($iiif instanceof AbstractIiifResource) {
-                            
-                            return 'IIIF2';
-                            
-                        } elseif ($iiif instanceof AbstractIiifResource3) {
-                            
-                            return 'IIIF3';
-                            
-                        }
-                        
-                    }
-                    
-                }
-                
-                return null;
-                
-            }
-            
-        }
-        
-    }
-    
     /**
      * This gets the location of a downloadable file. 
      * @param string $id
@@ -465,19 +359,130 @@ abstract class tx_dlf_document {
             }
 
         }
-        
-        
 
-        // Create new instance depending on format...
+        // Create new instance depending on format (METS or IIIF) ...
+        $documentFormat = null;
         
-        $documentFormat = self::getDocumentFormat($uid, $pid);
+        $xml = null;
+        
+        $iiif = null;
+        
+        // Try to get document format from database
+        if (\TYPO3\CMS\Core\Utility\MathUtility::canBeInterpretedAsInteger($uid)) {
+            
+            $whereClause = 'tx_dlf_documents.uid='.intval($uid).tx_dlf_helper::whereClause('tx_dlf_documents');
+            if ($pid) {
+                
+                $whereClause .= ' AND tx_dlf_documents.pid='.intval($pid);
+                
+            }
+            $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
+                'tx_dlf_documents.location AS location,tx_dlf_documents.document_format AS document_format',
+                'tx_dlf_documents',
+                $whereClause,
+                '',
+                '',
+                '1'
+                );
+            
+            if ($GLOBALS['TYPO3_DB']->sql_num_rows($result) > 0) {
+                
+                for ($i = 0, $j = $GLOBALS['TYPO3_DB']->sql_num_rows($result); $i < $j; $i++) {
+                    
+                    $resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result);
+                    
+                    $documentFormat = $resArray['document_format'];
+                    
+                }
+                
+            }
+            
+        } else {
+            
+            // Get document format from content of remote document
+            // Cast to string for safety reasons.
+            $location = (string) $uid;
+            
+            // Try to load a file from the url
+            if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location)) {
+                
+                // Load extension configuration
+                $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['dlf']);
+                
+                // Set user-agent to identify self when fetching XML data.
+                if (!empty($extConf['useragent'])) {
+                    
+                    @ini_set('user_agent', $extConf['useragent']);
+                    
+                }
+                
+                $content = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($location);
+
+                // TODO use single place to load xml
+                
+                // Turn off libxml's error logging.
+                $libxmlErrors = libxml_use_internal_errors(TRUE);
+                
+                // Disables the functionality to allow external entities to be loaded when parsing the XML, must be kept
+                $previousValueOfEntityLoader = libxml_disable_entity_loader(TRUE);
+                
+                // Load XML from file.
+                $xml = simplexml_load_string($content);
+                
+                // reset entity loader setting
+                libxml_disable_entity_loader($previousValueOfEntityLoader);
+                
+                // Reset libxml's error logging.
+                libxml_use_internal_errors($libxmlErrors);
+                
+                if ($xml !== false) {
+                    
+                    /* @var $xml SimpleXMLElement */
+                    $xml->registerXPathNamespace('mets', 'http://www.loc.gov/METS/');
+                    
+                    $xpathResult = $xml->xpath('//mets:mets');
+                    
+                    $documentFormat = ($xpathResult !== false && count($xpathResult)>0) ? 'METS' : null;
+                    
+                } else {
+                    
+                    $contentAsJsonArray = json_decode($content, true);
+                    
+                    if ($contentAsJsonArray !== null) {
+                        
+                        if (!class_exists('\\iiif\\presentation\\IiifHelper', false)) {
+                            
+                            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
+                            
+                        }
+                        
+                        $iiif = IiifHelper::loadIiifResource($contentAsJsonArray);
+                        
+                        if ($iiif instanceof IiifResourceInterface) {
+                            
+                            $documentFormat = 'IIIF';
+                            
+                        }
+                        
+                    }
+                    
+                }
+                
+            }
+            
+        }
+        
+        // Sanitize input.
+        $pid = max(intval($pid), 0);
         
         if ($documentFormat == 'METS') {
-            $instance = &tx_dlf_mets_document::getMetsInstance($uid, $pid);
-        } elseif ($documentFormat == 'IIIF2') {
-            $instance = tx_dlf_iiif_manifest::getIiifInstance($uid, $pid);
-        } elseif ($documentFormat == 'IIIF3') {
-            $instance = tx_dlf_iiif_manifest_3::getIiif3Instance($uid, $pid);
+            
+            $instance = new tx_dlf_mets_document($uid, $pid, $xml);
+            
+        } elseif ($documentFormat == 'IIIF') {
+            
+            $instance = new tx_dlf_iiif_manifest($uid, $pid, $iiif);
+            
         }
 
         // ...and save instance to registry.
@@ -720,6 +725,13 @@ abstract class tx_dlf_document {
      */
     protected abstract function init();
 
+    /**
+     * Reuse any document that might have been already loaded to determine wether is METS or IIIF
+     * 
+     * @param SimpleXMLElement|IiifResourceInterface $preloadedDocument: 
+     */
+    protected abstract function setPreloadedDocument($preloadedDocument);
+    
     protected abstract function loadLocation($location);
     
     /**
@@ -1660,7 +1672,7 @@ abstract class tx_dlf_document {
      *
      * @return	void
      */
-    protected function __construct($uid, $pid) {
+    protected function __construct($uid, $pid, $preloadedDocument) {
 
         // Prepare to check database for the requested document.
         if (\TYPO3\CMS\Core\Utility\MathUtility::canBeInterpretedAsInteger($uid)) {
@@ -1668,9 +1680,9 @@ abstract class tx_dlf_document {
             $whereClause = 'tx_dlf_documents.uid='.intval($uid).tx_dlf_helper::whereClause('tx_dlf_documents');
 
         } else {
-
+            
             // Try to load METS file / IIIF manifest.
-            if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($uid) && $this->load($uid)) {
+            if ($this->setPreloadedDocument($preloadedDocument) || \TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($uid) && $this->load($uid)) {
 
                 // Initialize core METS or IIIF object.
                 $this->init();

@@ -458,36 +458,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         return $format;
     }
     
-    protected static function &getIiifInstance($uid, $pid = 0, $forceReload = FALSE) {
-        
-        if (!class_exists('\\iiif\\model\\resources\\IiifReader', false)) {
-            
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/AccessHelper.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/JSONPath.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/JSONPathException.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/JSONPathLexer.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/JSONPathToken.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/AbstractFilter.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/IndexesFilter.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/IndexFilter.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/QueryMatchFilter.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/QueryResultFilter.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/RecursiveFilter.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/JSONPath/Flow/JSONPath/Filters/SliceFilter.php'));
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
-        }
-        
-        // Sanitize input.
-        $pid = max(intval($pid), 0);
-        
-        // Create new instance...
-        $instance = new self($uid, $pid);
-        
-        // Return new instance.
-        return $instance;
-    }
-    
-
     /**
      * {@inheritDoc}
      * @see tx_dlf_document::getLogicalStructure()
@@ -778,7 +748,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             'owner' => array (),
         );
 
-        $metadata['document_format'][] = 'IIIF';
+        $metadata['document_format'][] = 'IIIF2';
         
         $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
             'tx_dlf_metadata.index_name AS index_name,tx_dlf_metadataformat.xpath AS xpath,tx_dlf_metadataformat.xpath_sorting AS xpath_sorting,tx_dlf_metadata.is_sortable AS is_sortable,tx_dlf_metadata.default_value AS default_value,tx_dlf_metadata.format AS format',
@@ -1075,7 +1045,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         $content = GeneralUtility::getUrl($location);
 
-        //$resource = IiifReader::getIiifResourceFromJsonString($content);
+        if (!class_exists('\\iiif\\presentation\\IiifHelper', false)) {
+            
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
+            
+        }
+        
         $resource = IiifHelper::loadIiifResource($content);
         
         if ($resource != null ){
@@ -1198,7 +1173,20 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         return $this->toplevelId;
         
     }
+     
+    protected function setPreloadedDocument($preloadedDocument) {
         
+        if ($preloadedDocument instanceof ManifestInterface) {
+            
+            $this->iiif = $preloadedDocument;
+            
+            return true;
+            
+        }
+        
+        return false;
+        
+    }
     
     /**
      * This magic method is executed after the object is deserialized
