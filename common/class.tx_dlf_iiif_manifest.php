@@ -14,19 +14,18 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
 use iiif\presentation\IiifHelper;
+use iiif\presentation\common\model\resources\AnnotationInterface;
 use iiif\presentation\common\model\resources\CanvasInterface;
+use iiif\presentation\common\model\resources\ContentResourceInterface;
+use iiif\presentation\common\model\resources\IiifResourceInterface;
 use iiif\presentation\common\model\resources\ManifestInterface;
-use iiif\presentation\v2\model\constants\ViewingHintValues;
+use iiif\presentation\common\model\resources\RangeInterface;
 use iiif\presentation\v2\model\resources\AnnotationList;
+use iiif\presentation\v2\model\resources\Canvas;
 use iiif\presentation\v2\model\resources\Collection;
 use iiif\presentation\v2\model\vocabulary\Motivation;
 use iiif\presentation\v2\model\vocabulary\Types;
 use iiif\services\AbstractImageService;
-use iiif\presentation\common\model\resources\ContentResourceInterface;
-use iiif\presentation\common\model\resources\AnnotationInterface;
-use iiif\presentation\common\model\resources\IiifResourceInterface;
-use iiif\presentation\common\model\resources\RangeInterface;
-use iiif\presentation\v2\model\resources\Range;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -159,10 +158,10 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 $this->physicalStructureInfo[$physSeq[0]]['dmdId'] = $iiifId;
                 
                 // TODO translation?
-                $this->physicalStructureInfo[$physSeq[0]]['label'] = $this->iiif->getDefaultLabel();
+                $this->physicalStructureInfo[$physSeq[0]]['label'] = $this->iiif->getLabelForDisplay();
                 
                 // TODO translation?
-                $this->physicalStructureInfo[$physSeq[0]]['orderlabel'] = $this->iiif->getDefaultLabel();
+                $this->physicalStructureInfo[$physSeq[0]]['orderlabel'] = $this->iiif->getLabelForDisplay();
                 
                 $this->physicalStructureInfo[$physSeq[0]]['type'] = 'physSequence';
                 
@@ -263,9 +262,9 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         // TODO check replacement
                         $this->physicalStructureInfo[$elements[$canvasOrder]]['dmdId']=null;
                         
-                        $this->physicalStructureInfo[$elements[$canvasOrder]]['label']=$canvas->getDefaultLabel();
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['label']=$canvas->getLabelForDisplay();
                         
-                        $this->physicalStructureInfo[$elements[$canvasOrder]]['orderlabel']=$canvas->getDefaultLabel();
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['orderlabel']=$canvas->getLabelForDisplay();
                         
                         // assume that a canvas always represents a page
                         $this->physicalStructureInfo[$elements[$canvasOrder]]['type']='page';
@@ -274,11 +273,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         
                         $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'] = null;
                         
-                        if ($canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
+                        // TODO abstraction for AnnotationList / AnnotationPage
+                        if ($canvas instanceof Canvas && $canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
                             
                             $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'] = array();
                             
-                            // TODO abstraction for AnnotationList / AnnotationPage
                             foreach ($canvas->getOtherContent() as $annotationList) {
                                 
                                 $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'][] = $annotationList->getId();
@@ -391,11 +390,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             if ($resource instanceof CanvasInterface) {
                 
-                return $resource->getImageAnnotations()[0]->getService()->getId();
+                return $resource->getImageAnnotations()[0]->getSingleService()->getId();
                 
             } elseif ($resource instanceof ContentResourceInterface) {
                 
-                return $resource->getService()->getId();
+                return $resource->getSingleService()->getId();
                 
             } elseif ($resource instanceof AbstractImageService) {
                 
@@ -521,9 +520,9 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         $details['dmdId'] = '';
         
-        $details['label'] = $resource->getDefaultLabel() !== null ? $resource->getDefaultLabel() : '';
+        $details['label'] = $resource->getLabelForDisplay() !== null ? $resource->getLabelForDisplay() : '';
         
-        $details['orderlabel'] = $resource->getDefaultLabel() !== null ? $resource->getDefaultLabel() : '';
+        $details['orderlabel'] = $resource->getLabelForDisplay() !== null ? $resource->getLabelForDisplay() : '';
 
         $details['contentIds'] = '';
         
@@ -619,20 +618,19 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $details['children'] = array ();
             
-            if ($resource instanceof ManifestInterface && $resource->getTopRanges() != null) {
+            if ($resource instanceof ManifestInterface && $resource->getRootRanges() != null) {
 
                 $rangesToAdd = [];
                 
                 $rootRanges = [];
                 
-                if (sizeof($this->iiif->getTopRanges()) == 1 && $this->iiif->getTopRanges()[0] instanceof Range 
-                    && $this->iiif->getTopRanges()[0]->getViewingHint() == ViewingHintValues::TOP) {
+                if (sizeof($this->iiif->getRootRanges()) == 1 && $this->iiif->getRootRanges()[0]->isTopRange()) {
                     
-                    $rangesToAdd = $this->iiif->getTopRanges()[0]->getMemberRangesAndRanges();
+                    $rangesToAdd = $this->iiif->getRootRanges()[0]->getMemberRangesAndRanges();
                     
                 } else {
                     
-                    $rangesToAdd = $this->iiif->getTopRanges();
+                    $rangesToAdd = $this->iiif->getRootRanges();
                     
                 }
                 
@@ -897,7 +895,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         // map range's canvases including all child ranges' canvases
         
-        if (!($range instanceof Range) || empty($range->getViewingHint()) || $range->getViewingHint()!=ViewingHintValues::TOP) {
+        if (!$range->isTopRange()) {
             
             foreach ($range->getAllCanvasesRecursively() as $canvas) {
                 
@@ -1107,6 +1105,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
          *  https://digi.ub.uni-heidelberg.de/diglit/iiif/hirsch_hamburg1933_04_25/list/0001.json
          */
         
+        if (true) return;
         
         // FIXME annotations for painting do not necessarily contain fulltext.
         if (!$this->hasFulltextSet && $this->iiif instanceof ManifestInterface) {
