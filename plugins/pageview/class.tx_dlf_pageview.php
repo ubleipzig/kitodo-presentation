@@ -299,8 +299,6 @@ class tx_dlf_pageview extends tx_dlf_plugin {
 
         $fulltext = array ();
         
-        // TODO check iiif annotations and "seeAlso" of manifest, sequence or canvases for ALTO fulltext files
-
         // Get fulltext link.
         if (!empty($this->doc->physicalStructureInfo[$this->doc->physicalStructure[$page]]['files'][$this->conf['fileGrpFulltext']])) {
 
