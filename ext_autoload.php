@@ -52,6 +52,7 @@ return array (
     'tx_dlf_toolbox' => $extensionPath.'plugins/toolbox/class.tx_dlf_toolbox.php',
     'tx_dlf_toolsPdf' => $extensionPath.'plugins/toolbox/tools/pdf/class.tx_dlf_toolsPdf.php',
     'tx_dlf_toolsFulltext' => $extensionPath.'plugins/toolbox/tools/fulltext/class.tx_dlf_toolsFulltext.php',
+    'tx_dlf_toolsAnnotations' => $extensionPath.'plugins/toolbox/tools/annotations/class.tx_dlf_toolsAnnotations.php',
     'tx_dlf_toolsImagemanipulation' => $extensionPath.'plugins/toolbox/tools/imagemanipulation/class.tx_dlf_toolsImagemanipulation.php',
     'tx_dlf_toolsImagedownload' => $extensionPath.'plugins/toolbox/tools/imagedownload/class.tx_dlf_toolsImagedownload.php',
     'tx_dlf_validator' => $extensionPath.'plugins/validator/class.tx_dlf_validator.php'

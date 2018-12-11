@@ -19,33 +19,33 @@
 
 
 if (jQuery.fn.scrollTo === undefined) {
-	jQuery.fn.scrollTo = function(elem, speed) {
-	    var manualOffsetTop = $(elem).parent().height() / 2;
-	    $(this).animate({
-	        scrollTop:  $(this).scrollTop() - $(this).offset().top + $(elem).offset().top - manualOffsetTop
-	    }, speed == undefined ? 1000 : speed);
-	    return this;
-	};
+    jQuery.fn.scrollTo = function(elem, speed) {
+        var manualOffsetTop = $(elem).parent().height() / 2;
+        $(this).animate({
+            scrollTop:  $(this).scrollTop() - $(this).offset().top + $(elem).offset().top - manualOffsetTop
+        }, speed == undefined ? 1000 : speed);
+        return this;
+    };
 }
 
 class DlfAnnotationControl {
-	
-	constructor(map, image, annotationLists) {
-		
-		this.map = map;
-		
-		this.image = image;
-		
-		this.annotationLists = annotationLists.annotationLists;
-		
-		this.canvas = annotationLists.canvas;
-		
-		this.annotationData;		
-		
-		this.dic = $('#tx-dlf-tools-annotation').length > 0 && $('#tx-dlf-tools-fulltext').attr('data-dic') ?
-	        dlfUtils.parseDataDic($('#tx-dlf-tools-fulltext')) :
-	        {'fulltext-anno-on':'Activate Fulltext','fulltext-anno-off':'Dectivate Fulltext'};
-	        
+    
+    constructor(map, image, annotationLists) {
+        
+        this.map = map;
+        
+        this.image = image;
+        
+        this.annotationLists = annotationLists.annotationLists;
+        
+        this.canvas = annotationLists.canvas;
+        
+        this.annotationData;        
+        
+        this.dic = $('#tx-dlf-tools-annotations').length > 0 && $('#tx-dlf-tools-annotations').attr('data-dic') ?
+            dlfUtils.parseDataDic($('#tx-dlf-tools-annotations')) :
+            {'annotations-on':'Display Annotations','annotations-off':'Hide Annotations'};
+            
         this.layers_ = {
             annotationList: new ol.layer.Vector({
                 'source': new ol.source.Vector(),
@@ -70,7 +70,7 @@ class DlfAnnotationControl {
         };
         
         this.handlers = {
-        	mapClick: $.proxy(function(event){
+            mapClick: $.proxy(function(event){
                 var feature = this.map.forEachFeatureAtPixel(event['pixel'], function(feature, layer) {
                     if (feature.get('type') === 'annotationList') {
                         return feature;
@@ -105,15 +105,15 @@ class DlfAnnotationControl {
                 }
                 
                 
-        	}, this),
-           	mapHover: $.proxy(function(event){
+            }, this),
+               mapHover: $.proxy(function(event){
                 // hover in case of dragging
                 if (event['dragging']) {
                     return;
                 };
 
                 var hoverSourceAnnotation = this.layers_.hoverAnnotation.getSource(),
-                	hoverSourceAnnotationList = this.layers_.hoverAnnotationList.getSource(),
+                    hoverSourceAnnotationList = this.layers_.hoverAnnotationList.getSource(),
                     selectSource = this.layers_.select.getSource(),
                     map_ = this.map,
                     annotationListFeature,
@@ -121,7 +121,7 @@ class DlfAnnotationControl {
 
                 map_.forEachFeatureAtPixel(event['pixel'], function(feature, layer) {
                     if (feature.get('type') === 'annotationList') {
-                    	annotationListFeature = feature;
+                        annotationListFeature = feature;
                     }
                     if (feature.get('type') === 'annotation') {
                         annotationFeature = feature;
@@ -164,7 +164,7 @@ class DlfAnnotationControl {
 
                     if (activeHoverAnnotationListEl) {
 
-                        // remove highlight effect on fulltext view
+                        // remove highlight effect on annotation view
                         var oldTargetElem = $('#' + activeHoverAnnotationListEl.getId());
 
                         if (oldTargetElem.hasClass('highlight') ) {
@@ -178,205 +178,205 @@ class DlfAnnotationControl {
 
                     if (annotationFeature) {
 
-                        // add highlight effect to fulltext view
+                        // add highlight effect to annotation view
                         var targetElem = $('#' + annotationFeature.getId());
 
                         if (targetElem.length > 0 && !targetElem.hasClass('highlight')) {
                             targetElem.addClass('highlight');
-                            $('#tx-dlf-fulltextselection').scrollTo(targetElem, 50);
+                            $('#tx-dlf-annotationselection').scrollTo(targetElem, 50);
                             hoverSourceAnnotation.addFeature(annotationFeature);
                         }
 
                     }
 
                 }
-           	}, this)
+               }, this)
         };
 
-        var anchorEl = $('#tx-dlf-tools-annotation');
+        var anchorEl = $('#tx-dlf-tools-annotations');
         if (anchorEl.length > 0){
-            var toogleFulltext = $.proxy(function(event) {
-            	  event.preventDefault();
+            var toogleAnnotations = $.proxy(function(event) {
+                  event.preventDefault();
 
-            	  if ($(event.target).hasClass('active')){
-            		  this.deactivate();
-            		  return;
-            	  }
+                  if ($(event.target).hasClass('active')){
+                      this.deactivate();
+                      return;
+                  }
 
-            	  this.activate();
+                  this.activate();
               }, this);
 
-            anchorEl.on('click', toogleFulltext);
-            anchorEl.on('touchstart', toogleFulltext);
+            anchorEl.on('click', toogleAnnotations);
+            anchorEl.on('touchstart', toogleAnnotations);
         }
         
         
         this.selectedFeature_ = undefined;
 
-        // set initial title of fulltext element
-        $("#tx-dlf-tools-annotation")
-        	.text(this.dic['fulltext-anno-on'])
-        	.attr('title', this.dic['fulltext-anno-on']);
+        // set initial title of annotation element
+        $("#tx-dlf-tools-annotations")
+            .text(this.dic['annotations-on'])
+            .attr('title', this.dic['annotations-on']);
 
-        // if fulltext is activated via cookie than run activation methode
-        if (dlfUtils.getCookie("tx-dlf-pageview-fulltext-select") == 'enabled') {
-        	// activate the fulltext behavior
-        	this.activate(anchorEl);
+        // if annotation is activated via cookie than run activation methode
+        if (dlfUtils.getCookie("tx-dlf-pageview-annotation-select") == 'enabled') {
+            // activate the annotation behavior
+            this.activate(anchorEl);
         }
-	}
-	
-	
-	showAnnotationText(featuresParam) {
-		var features = featuresParam === undefined ? this.annotationData : featuresParam;
-	    if (features !== undefined) {
-			$('#tx-dlf-fulltextselection').children().remove();
-	        for (var i = 0; i < features.length; i++) {
-	        	var feature = features[i],
-	        		annotations = feature.get('annotations'),
-	        	    labelEl;
-	        	if (feature.get('label') != '') {
-		        	labelEl = $('<span class="annotation-list-label"/>');
-	        		labelEl.text(feature.get('label'));
-	        		$('#tx-dlf-fulltextselection').append(labelEl);
-	        	}
-				for (var j=0; j<annotations.length; j++) {
-					/*
-					 * In contrast to XML attributes, string values in JSON may contain characters like <. Just joining the 
-					 * text content and appending the result afterwards as in dlfViewerFullTextControl.showFulltext()
-					 * will result in errors (and also allows the introduction of perfectly working <script> tags through annotations.)    
-					 */     
-		        	var span = $('<span class="annotation" id="' + annotations[j].getId() + '"/>');
-		        	span.text(annotations[j].get('content'));
-		        	$('#tx-dlf-fulltextselection').append(span);
-		        	$('#tx-dlf-fulltextselection').append(' ');
-				}
-				$('#tx-dlf-fulltextselection').append('<br /><br />');
-	        }
-	    }
-	}
-	
-	
-	
-	activate() {
-		
-		var controlEl = $('#tx-dlf-tools-annotation');
+    }
+    
+    
+    showAnnotationText(featuresParam) {
+        var features = featuresParam === undefined ? this.annotationData : featuresParam;
+        if (features !== undefined) {
+            $('#tx-dlf-annotationselection').children().remove();
+            for (var i = 0; i < features.length; i++) {
+                var feature = features[i],
+                    annotations = feature.get('annotations'),
+                    labelEl;
+                if (feature.get('label') != '') {
+                    labelEl = $('<span class="annotation-list-label"/>');
+                    labelEl.text(feature.get('label'));
+                    $('#tx-dlf-annotationselection').append(labelEl);
+                }
+                for (var j=0; j<annotations.length; j++) {
+                    /*
+                     * In contrast to XML attributes, string values in JSON may contain characters like <. Just joining the 
+                     * text content and appending the result afterwards as in dlfViewerFullTextControl.showFulltext()
+                     * will result in errors (and also allows the introduction of perfectly working <script> tags through annotations.)    
+                     */     
+                    var span = $('<span class="annotation" id="' + annotations[j].getId() + '"/>');
+                    span.text(annotations[j].get('content'));
+                    $('#tx-dlf-annotationselection').append(span);
+                    $('#tx-dlf-annotationselection').append(' ');
+                }
+                $('#tx-dlf-annotationselection').append('<br /><br />');
+            }
+        }
+    }
+    
+    
+    
+    activate() {
+        
+        var controlEl = $('#tx-dlf-tools-annotations');
 
-		// if the activate method is called for the first time fetch
-		// fulltext data from server
-		if (this.annotationData === undefined)  {
-			this.annotationData = this.fetchAnnotationListsFromServer(this.annotationLists, this.image, this.canvas);
+        // if the activate method is called for the first time fetch
+        // fulltext data from server
+        if (this.annotationData === undefined)  {
+            this.annotationData = this.fetchAnnotationListsFromServer(this.annotationLists, this.image, this.canvas);
 
-	        if (this.annotationData !== undefined) {
-	        	
-	        	this.layers_.annotationList.getSource().addFeatures(this.annotationData);
-	        	for (var dataIndex = 0; dataIndex < this.annotationData.length; dataIndex++) {
-		    		this.layers_.annotation.getSource().addFeatures(this.annotationData[dataIndex].getAnnotations());
-	        	}
-	        	
-	    		if (this.annotationData.length >0)
-	    		{
-	    	        this.showAnnotationText(this.annotationData);
-//	    	        this.layers_.select.getSource().addFeature(this.annotationData[0]);
-//	    	        this.selectedFeature_ = this.annotationData[0];
-	    		}
-	        	
-	            // add features to fulltext layer
-	            //this.layers_.textline.getSource().addFeatures(this.annotationData.getTextlines());
+            if (this.annotationData !== undefined) {
+                
+                this.layers_.annotationList.getSource().addFeatures(this.annotationData);
+                for (var dataIndex = 0; dataIndex < this.annotationData.length; dataIndex++) {
+                    this.layers_.annotation.getSource().addFeatures(this.annotationData[dataIndex].getAnnotations());
+                }
+                
+                if (this.annotationData.length >0)
+                {
+                    this.showAnnotationText(this.annotationData);
+//                    this.layers_.select.getSource().addFeature(this.annotationData[0]);
+//                    this.selectedFeature_ = this.annotationData[0];
+                }
+                
+                // add features to fulltext layer
+                //this.layers_.textline.getSource().addFeatures(this.annotationData.getTextlines());
 
-	    	    // add first feature of textBlockFeatures to map
-	        }
-		}
+                // add first feature of textBlockFeatures to map
+            }
+        }
 
-		// now activate the fulltext overlay and map behavior
-	    this.enableAnnotationSelect();
-	    dlfUtils.setCookie("tx-dlf-pageview-fulltext-select", 'enabled');
-	    $(controlEl).addClass('active');
+        // now activate the fulltext overlay and map behavior
+        this.enableAnnotationSelect();
+        dlfUtils.setCookie("tx-dlf-pageview-annotation-select", 'enabled');
+        $(controlEl).addClass('active');
 
-	    // trigger event
-	    $(this).trigger("activate-fulltext", this);
-		
-	}
-	
-	deactivate() {
+        // trigger event
+        $(this).trigger("activate-annotations", this);
+        
+    }
+    
+    deactivate() {
 
-		var controlEl = $('#tx-dlf-tools-annotation');
+        var controlEl = $('#tx-dlf-tools-annotations');
 
-		// deactivate fulltext
-		this.disableAnnotationSelect();
-	    dlfUtils.setCookie("tx-dlf-pageview-fulltext-select", 'disabled');
-	    $(controlEl).removeClass('active');
+        // deactivate annotations
+        this.disableAnnotationSelect();
+        dlfUtils.setCookie("tx-dlf-pageview-annotation-select", 'disabled');
+        $(controlEl).removeClass('active');
 
-	    // trigger event
-	    $(this).trigger("deactivate-fulltext", this);
-	};
-	
-	disableAnnotationSelect() {
+        // trigger event
+        $(this).trigger("deactivate-annotations", this);
+    };
+    
+    disableAnnotationSelect() {
 
-	    // register event listeners
-	    this.map.un('click', this.handlers.mapClick);
-	    this.map.un('pointermove', this.handlers.mapHover);
+        // register event listeners
+        this.map.un('click', this.handlers.mapClick);
+        this.map.un('pointermove', this.handlers.mapHover);
 
-	    // remove layers
-	    for (var key in this.layers_) {
-	        if (this.layers_.hasOwnProperty(key)) {
-	            this.map.removeLayer(this.layers_[key]);
-	        }
-	    };
+        // remove layers
+        for (var key in this.layers_) {
+            if (this.layers_.hasOwnProperty(key)) {
+                this.map.removeLayer(this.layers_[key]);
+            }
+        };
 
-	    var className = 'fulltext-visible';
-	    $("#tx-dlf-tools-annotation").removeClass(className)
-	        .text(this.dic['fulltext-anno-on'])
-	        .attr('title', this.dic['fulltext-anno-on']);
+        var className = 'fulltext-visible';
+        $("#tx-dlf-tools-annotations").removeClass(className)
+            .text(this.dic['annotations-on'])
+            .attr('title', this.dic['annotations-on']);
 
-	    $('#tx-dlf-fulltextselection').removeClass(className);
-	    $('#tx-dlf-fulltextselection').hide();
-	    $('body').removeClass(className);
+        $('#tx-dlf-annotationselection').removeClass(className);
+        $('#tx-dlf-annotationselection').hide();
+        $('body').removeClass(className);
 
-	};
+    };
 
-	
-	enableAnnotationSelect(textBlockFeatures, textLineFeatures) {
+    
+    enableAnnotationSelect(textBlockFeatures, textLineFeatures) {
 
-	    // register event listeners
-	    this.map.on('click', this.handlers.mapClick);
-	    this.map.on('pointermove', this.handlers.mapHover);
+        // register event listeners
+        this.map.on('click', this.handlers.mapClick);
+        this.map.on('pointermove', this.handlers.mapHover);
 
-	    // add layers to map
-	    for (var key in this.layers_) {
-	        if (this.layers_.hasOwnProperty(key)) {
-	            this.map.addLayer(this.layers_[key]);
-	        }
-	    };
+        // add layers to map
+        for (var key in this.layers_) {
+            if (this.layers_.hasOwnProperty(key)) {
+                this.map.addLayer(this.layers_[key]);
+            }
+        };
 
-	    // show fulltext container
-	    var className = 'fulltext-visible';
-	    $("#tx-dlf-tools-annotation").addClass(className)
-	      .text(this.dic['fulltext-anno-off'])
-	      .attr('title', this.dic['fulltext-anno-off']);
+        // show fulltext container
+        var className = 'fulltext-visible';
+        $("#tx-dlf-tools-annotations").addClass(className)
+          .text(this.dic['annotations-off'])
+          .attr('title', this.dic['annotations-off']);
 
-	    $('#tx-dlf-fulltextselection').addClass(className);
-	    $('#tx-dlf-fulltextselection').show();
-	    $('body').addClass(className);
-	}
-	
-	
-	fetchAnnotationListsFromServer(annotationLists, image, canvas, optOffset) {
-		var annotationListData = [],
-			parser;
-    	parser = new DlfIiifAnnotationParser(image, canvas.width, canvas.height, optOffset);
-		annotationLists.forEach(function(annotationList){
-			var responseJson;
-		    var request = $.ajax({
-		        url: annotationList.uri,
-		        async: false
-		    });
-		    responseJson = request.responseJSON != null ? request.responseJSON : request.responseText != null ? $.parseJSON(request.responseText) : null;
-		    if (responseJson.label === undefined) {
-		    	responseJson.label = annotationList.label;
-		    }
-		    annotationListData.push(parser.parseAnnotationList(responseJson, canvas.id));
-		});
-		return annotationListData;
-	}
-	
+        $('#tx-dlf-annotationselection').addClass(className);
+        $('#tx-dlf-annotationselection').show();
+        $('body').addClass(className);
+    }
+    
+    
+    fetchAnnotationListsFromServer(annotationLists, image, canvas, optOffset) {
+        var annotationListData = [],
+            parser;
+        parser = new DlfIiifAnnotationParser(image, canvas.width, canvas.height, optOffset);
+        annotationLists.forEach(function(annotationList){
+            var responseJson;
+            var request = $.ajax({
+                url: annotationList.uri,
+                async: false
+            });
+            responseJson = request.responseJSON != null ? request.responseJSON : request.responseText != null ? $.parseJSON(request.responseText) : null;
+            if (responseJson.label === undefined) {
+                responseJson.label = annotationList.label;
+            }
+            annotationListData.push(parser.parseAnnotationList(responseJson, canvas.id));
+        });
+        return annotationListData;
+    }
+    
 }

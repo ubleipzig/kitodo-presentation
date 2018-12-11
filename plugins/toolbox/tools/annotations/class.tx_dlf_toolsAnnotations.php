@@ -10,17 +10,18 @@
  */
 
 /**
- * Tool 'Fulltext selection' for the plugin 'DLF: Toolbox' of the 'dlf' extension.
+ * Tool 'Annotation selection' for the plugin 'DLF: Toolbox' of the 'dlf' extension.
  *
  * @author	Sebastian Meyer <sebastian.meyer@slub-dresden.de>
  * @author	Alexander Bigga <alexander.bigga@slub-dresden.de>
+ * @author  Lutz Helm <helm@ub.uni-leipzig.de>
  * @package	TYPO3
  * @subpackage	tx_dlf
  * @access	public
  */
-class tx_dlf_toolsFulltext extends tx_dlf_plugin {
+class tx_dlf_toolsAnnotations extends tx_dlf_plugin {
 
-    public $scriptRelPath = 'plugins/toolbox/tools/fulltext/class.tx_dlf_toolsFulltext.php';
+    public $scriptRelPath = 'plugins/toolbox/tools/annotations/class.tx_dlf_toolsAnnotations.php';
 
     /**
      * The main method of the PlugIn
@@ -42,7 +43,7 @@ class tx_dlf_toolsFulltext extends tx_dlf_plugin {
         // Load current document.
         $this->loadDocument();
 
-        if ($this->doc === NULL || $this->doc->numPages < 1 || empty($this->conf['fileGrpFulltext'])) {
+        if ($this->doc === NULL || $this->doc->numPages < 1) {
 
             // Quit without doing anything if required variables are not set.
             return $content;
@@ -80,18 +81,20 @@ class tx_dlf_toolsFulltext extends tx_dlf_plugin {
 
         } else {
 
-            $this->template = $this->cObj->getSubpart($this->cObj->fileResource('EXT:dlf/plugins/toolbox/tools/fulltext/template.tmpl'), '###TEMPLATE###');
+            $this->template = $this->cObj->getSubpart($this->cObj->fileResource('EXT:dlf/plugins/toolbox/tools/annotations/template.tmpl'), '###TEMPLATE###');
 
         }
 
-        $fullTextFile = $this->doc->physicalStructureInfo[$this->doc->physicalStructure[$this->piVars['page']]]['files'][$this->conf['fileGrpFulltext']];
+        $annotationLists = $this->doc->physicalStructureInfo[$this->doc->physicalStructure[$this->piVars['page']]]['annotationLists'];
         
-        if (!empty($fullTextFile)) {
-            $markerArray['###FULLTEXT_SELECT###'] = '<a class="select switchoff" id="tx-dlf-tools-fulltext" title="" data-dic="fulltext-on:'
-                    .$this->pi_getLL('fulltext-on', '', TRUE).';fulltext-off:'
-                    .$this->pi_getLL('fulltext-off', '', TRUE).'">&nbsp;</a>';
+        if ($annotationLists != null && sizeof($annotationLists)>0) {
+            $markerArray['###ANNOTATION_SELECT###'] = '<a class="select switchoff" id="tx-dlf-tools-annotations" title="" data-dic="annotations-on:'
+                .$this->pi_getLL('annotations-on', '', TRUE).';annotations-off:'
+                    .$this->pi_getLL('annotations-off', '', TRUE).'">&nbsp;</a>';
+            // TODO selector for different 
+            
         } else {
-            $markerArray['###FULLTEXT_SELECT###'] = '<span class="no-fulltext">'.$this->pi_getLL('fulltext-not-available', '', TRUE).'</span>';
+            $markerArray['###ANNOTATION_SELECT###'] = '<span class="no-annotations">'.$this->pi_getLL('annotations-not-available', '', TRUE).'</span>';
         }
 
         $content .= $this->cObj->substituteMarkerArray($this->template, $markerArray);

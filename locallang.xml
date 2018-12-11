@@ -143,6 +143,7 @@
 			<label index="tx_dlf_mail.name">Name</label>
 			<label index="tx_dlf_toolbox.toolsPdf">PDF Download</label>
 			<label index="tx_dlf_toolbox.toolsFulltext">Fulltext</label>
+			<label index="tx_dlf_toolbox.toolsAnnotations">Annotations</label>
 			<label index="tx_dlf_toolbox.toolsImagemanipulation">Image Manipulation</label>
 			<label index="tx_dlf_toolbox.toolsImagedownload">Image Download</label>
 			<label index="tt_content.dlf_audioplayer">DLF: Audio Player</label>
@@ -358,6 +359,7 @@
 			<label index="tx_dlf_mail.name">Name</label>
 			<label index="tx_dlf_toolbox.toolsPdf">PDF-Download</label>
 			<label index="tx_dlf_toolbox.toolsFulltext">Volltext</label>
+			<label index="tx_dlf_toolbox.toolsAnnotations">Annotationen</label>
 			<label index="tx_dlf_toolbox.toolsImagemanipulation">Bildbearbeitung</label>
 			<label index="tx_dlf_toolbox.toolsImagedownload">Bild-Download</label>
 			<label index="tt_content.dlf_audioplayer">DLF: Audioplayer</label>

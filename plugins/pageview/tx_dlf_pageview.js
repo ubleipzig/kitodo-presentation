@@ -159,14 +159,16 @@ dlfViewer.prototype.addCustomControls = function(controlNames) {
     // behavior is active
     if (this.fulltexts[0] !== undefined && this.fulltexts[0].url != null && this.fulltexts[0].url !== '' && this.images.length == 1) {
         fulltextControl = new dlfViewerFullTextControl(this.map, this.images[0], this.fulltexts[0].url);
-    } else if (this.annotationLists[0] !== undefined && this.annotationLists[0].annotationLists !== undefined && this.annotationLists[0].annotationLists.length > 0 && this.images.length == 1) {
-    	// Adds annotation behavior only if there are annotations available and vie is single page
-    	annotationControl = new DlfAnnotationControl(this.map, this.images[0], this.annotationLists[0]);
     } else {
         $('#tx-dlf-tools-fulltext').remove();
-        // $('#tx-dlf-tools-annotation').remove();
     }
-
+    if (this.annotationLists[0] !== undefined && this.annotationLists[0].annotationLists !== undefined && this.annotationLists[0].annotationLists.length > 0 && this.images.length == 1) {
+    	// Adds annotation behavior only if there are annotations available and vie is single page
+    	annotationControl = new DlfAnnotationControl(this.map, this.images[0], this.annotationLists[0]);
+    }
+    else {
+        $('#tx-dlf-tools-annotations').remove();
+    }
     //
     // Add image manipulation tool if container is added.
     //

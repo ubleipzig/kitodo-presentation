@@ -50,6 +50,9 @@ if (!defined('TYPO3_MODE')) {
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPItoST43($_EXTKEY, 'plugins/toolbox/tools/fulltext/class.tx_dlf_toolsFulltext.php', '_toolsFulltext', '', TRUE);
 $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['dlf/plugins/toolbox/tools'][\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::getCN($_EXTKEY).'_toolsFulltext'] = 'LLL:EXT:dlf/locallang.xml:tx_dlf_toolbox.toolsFulltext';
 
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPItoST43($_EXTKEY, 'plugins/toolbox/tools/annotations/class.tx_dlf_toolsAnnotations.php', '_toolsAnnotations', '', TRUE);
+$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['dlf/plugins/toolbox/tools'][\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::getCN($_EXTKEY).'_toolsAnnotations'] = 'LLL:EXT:dlf/locallang.xml:tx_dlf_toolbox.toolsAnnotations';
+
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPItoST43($_EXTKEY, 'plugins/toolbox/tools/imagemanipulation/class.tx_dlf_toolsImagemanipulation.php', '_toolsImagemanipulation', '', TRUE);
 $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['dlf/plugins/toolbox/tools'][\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::getCN($_EXTKEY).'_toolsImagemanipulation'] = 'LLL:EXT:dlf/locallang.xml:tx_dlf_toolbox.toolsImagemanipulation';
 
