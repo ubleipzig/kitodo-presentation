@@ -164,6 +164,8 @@ final class tx_dlf_mets_document extends tx_dlf_document {
                 
             }
             
+            IiifHelper::setUrlReader(tx_dlf_iiif_urlreader::getInstance());
+            
             $service = IiifHelper::loadIiifResource($fileLocation);
             
             if ($service != null && $service instanceof AbstractImageService) {

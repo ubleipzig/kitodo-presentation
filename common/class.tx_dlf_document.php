@@ -456,6 +456,8 @@ abstract class tx_dlf_document {
                             
                         }
                         
+                        IiifHelper::setUrlReader(tx_dlf_iiif_urlreader::getInstance());
+                        
                         $iiif = IiifHelper::loadIiifResource($contentAsJsonArray);
                         
                         if ($iiif instanceof IiifResourceInterface) {

@@ -19,6 +19,7 @@ return array (
     'tx_dlf_fulltext' => $extensionPath.'common/class.tx_dlf_fulltext.php',
     'tx_dlf_helper' => $extensionPath.'common/class.tx_dlf_helper.php',
     'tx_dlf_iiif_manifest' => $extensionPath.'common/class.tx_dlf_iiif_manifest.php',
+    'tx_dlf_iiif_urlreader' => $extensionPath.'common/class.tx_dlf_iiif_urlreader.php',
     'tx_dlf_indexing' => $extensionPath.'common/class.tx_dlf_indexing.php',
     'tx_dlf_list' => $extensionPath.'common/class.tx_dlf_list.php',
     'tx_dlf_mets_document' => $extensionPath.'common/class.tx_dlf_mets_document.php',

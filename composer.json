@@ -36,6 +36,7 @@
       "common/class.tx_dlf_helper.php",
       "common/class.tx_dlf_indexing.php",
       "common/class.tx_dlf_iiif_manifest.php",
+      "common/class.tx_dlf_iiif_urlreader.php",
       "common/class.tx_dlf_list.php",
       "common/class.tx_dlf_mets_document.php",
       "common/class.tx_dlf_mods.php",

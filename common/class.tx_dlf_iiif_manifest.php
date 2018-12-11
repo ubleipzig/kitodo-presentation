@@ -1049,6 +1049,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
         }
         
+        IiifHelper::setUrlReader(tx_dlf_iiif_urlreader::getInstance());
+        
         $resource = IiifHelper::loadIiifResource($content);
         
         if ($resource != null ){
@@ -1196,6 +1198,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      * @return	void
      */
     public function __wakeup() {
+        
+        IiifHelper::setUrlReader(tx_dlf_iiif_urlreader::getInstance());
         
         $resource = IiifHelper::loadIiifResource($this->asJson);
         
