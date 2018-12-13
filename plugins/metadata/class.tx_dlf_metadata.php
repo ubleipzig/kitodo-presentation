@@ -276,7 +276,7 @@ class tx_dlf_metadata extends tx_dlf_plugin {
                     
                     $field = $this->cObj->stdWrap(htmlspecialchars($label), $iiifwrap['key.']);
                     
-                    $field .= $this->cObj->stdWrap(htmlspecialchars($value), $iiifwrap['value.']);
+                    $field .= $this->cObj->stdWrap(htmlspecialchars($this->cObj->data[$label]), $iiifwrap['value.']);
                     
                     $markerArray['###METADATA###'] .= $this->cObj->stdWrap($field, $fieldwrap['all.']);
                     
@@ -360,7 +360,7 @@ class tx_dlf_metadata extends tx_dlf_plugin {
                         
                     } else {
                         
-                        $this->cObj->data0[$index_name] = $value;
+                        $this->cObj->data[$index_name] = $value;
                         
                     }
                     
