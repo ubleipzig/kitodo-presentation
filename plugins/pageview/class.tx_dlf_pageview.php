@@ -360,7 +360,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                                     && $annotation->getResource()->getChars() != null) {
                                         $annotationListData = [];
                                         $annotationListData["uri"] = $annotationList->getId();
-                                        $annotationListData["label"] = $annotationList->getTranslatedLabel();
+                                        $annotationListData["label"] = $annotationList->getLabelForDisplay();
                                         
                                         $annotationLists[] = $annotationListData;
                                         

@@ -697,11 +697,10 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             }
             
             if ($iiifResource->getMetadata() != null) {
-                
-                foreach ($iiifResource->getMetadata() as $metadatum)  {
+
+                foreach ($iiifResource->getMetadataForDisplay() as $metadata)  {
                     
-                    // TODO abstraction
-                    $result[$metadatum['label']] = $iiifResource->getMetadataForLabel($metadatum['label']);
+                    $result[$metadata['label']] = $metadata['value'];
                     
                 }
                 
