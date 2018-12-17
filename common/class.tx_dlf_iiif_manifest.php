@@ -26,6 +26,8 @@ use iiif\presentation\v2\model\resources\Collection;
 use iiif\presentation\v2\model\vocabulary\Motivation;
 use iiif\presentation\v2\model\vocabulary\Types;
 use iiif\services\AbstractImageService;
+use iiif\presentation\v2\model\resources\AbstractIiifResource;
+use iiif\presentation\v3\model\resources\AbstractIiifResource3;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -43,6 +45,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      * @var ManifestInterface
      */
     protected $iiif;
+    
+    protected $iiifVersion;
 
     protected $hasFulltextSet = false;
     
@@ -89,6 +93,26 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     {
         
         return $this->iiif;
+        
+    }
+    
+    public function getIiifVersion() {
+        
+        if (!isset($this->iiifVersion)) {
+            
+            if ($this->iiif instanceof AbstractIiifResource) {
+                
+                $this->iiifVersion = 'IIIF2';
+                
+            } elseif ($this->iiif instanceof AbstractIiifResource3) {
+                
+                $this->iiifVersion = 'IIIF3';
+                
+            }
+            
+        }
+        
+        return $this->iiifVersion;
         
     }
 
@@ -745,12 +769,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             'owner' => array (),
         );
 
-        $metadata['document_format'][] = 'IIIF2';
+        $metadata['document_format'][] = 'IIIF';
         
         $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
             'tx_dlf_metadata.index_name AS index_name,tx_dlf_metadataformat.xpath AS xpath,tx_dlf_metadataformat.xpath_sorting AS xpath_sorting,tx_dlf_metadata.is_sortable AS is_sortable,tx_dlf_metadata.default_value AS default_value,tx_dlf_metadata.format AS format',
             'tx_dlf_metadata,tx_dlf_metadataformat,tx_dlf_formats',
-            'tx_dlf_metadata.pid='.$cPid.' AND tx_dlf_metadataformat.pid='.$cPid.' AND ((tx_dlf_metadata.uid=tx_dlf_metadataformat.parent_id AND tx_dlf_metadataformat.encoded=tx_dlf_formats.uid AND tx_dlf_formats.type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('IIIF2', 'tx_dlf_formats').') OR tx_dlf_metadata.format=0)'.tx_dlf_helper::whereClause('tx_dlf_metadata', TRUE).tx_dlf_helper::whereClause('tx_dlf_metadataformat').tx_dlf_helper::whereClause('tx_dlf_formats'),
+            'tx_dlf_metadata.pid='.$cPid.' AND tx_dlf_metadataformat.pid='.$cPid.' AND ((tx_dlf_metadata.uid=tx_dlf_metadataformat.parent_id AND tx_dlf_metadataformat.encoded=tx_dlf_formats.uid AND tx_dlf_formats.type='.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->getIiifVersion(), 'tx_dlf_formats').') OR tx_dlf_metadata.format=0)'.tx_dlf_helper::whereClause('tx_dlf_metadata', TRUE).tx_dlf_helper::whereClause('tx_dlf_metadataformat').tx_dlf_helper::whereClause('tx_dlf_formats'),
             '',
             '',
             ''

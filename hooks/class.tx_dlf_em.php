@@ -578,7 +578,7 @@ class tx_dlf_em {
         $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
             'type',
             'tx_dlf_formats',
-            '(type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('MODS', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('TEIHDR', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('IIIF2', 'tx_dlf_formats').')'.tx_dlf_helper::whereClause('tx_dlf_formats')
+            '(type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('MODS', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('TEIHDR', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('IIIF2', 'tx_dlf_formats').' OR type='.$GLOBALS['TYPO3_DB']->fullQuoteStr('IIIF3', 'tx_dlf_formats').')'.tx_dlf_helper::whereClause('tx_dlf_formats')
         );
 
         while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
@@ -616,7 +616,7 @@ class tx_dlf_em {
 
         }
 
-        // Add IIIF Presentation 2.0 context
+        // Add IIIF Presentation 2 context
         if (!$nsDefined['IIIF2']) {
             
             $data['tx_dlf_formats'][uniqid('NEW')] = array (
@@ -629,6 +629,7 @@ class tx_dlf_em {
             
         }
         
+        // Add IIIF Presentation 3 context
         if (!$nsDefined['IIIF3']) {
             
             $data['tx_dlf_formats'][uniqid('NEW')] = array (
