@@ -240,11 +240,6 @@ class DlfAnnotationControl {
                     $('#tx-dlf-annotationselection').append(labelEl);
                 }
                 for (var j=0; j<annotations.length; j++) {
-                    /*
-                     * In contrast to XML attributes, string values in JSON may contain characters like <. Just joining the 
-                     * text content and appending the result afterwards as in dlfViewerFullTextControl.showFulltext()
-                     * will result in errors (and also allows the introduction of perfectly working <script> tags through annotations.)    
-                     */     
                     var span = $('<span class="annotation" id="' + annotations[j].getId() + '"/>');
                     span.text(annotations[j].get('content'));
                     $('#tx-dlf-annotationselection').append(span);

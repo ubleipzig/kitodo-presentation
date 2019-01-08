@@ -189,7 +189,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
                 $this->physicalStructureInfo[$physSeq[0]]['type'] = 'physSequence';
                 
-                // TODO check nescessity
                 $this->physicalStructureInfo[$physSeq[0]]['contentIds'] = null;
                 
                 $fileUseDownload = $this->getUseGroups('fileGrpDownload');
