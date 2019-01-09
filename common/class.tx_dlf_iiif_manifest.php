@@ -28,6 +28,7 @@ use iiif\presentation\v2\model\vocabulary\Types;
 use iiif\services\AbstractImageService;
 use iiif\presentation\v2\model\resources\AbstractIiifResource;
 use iiif\presentation\v3\model\resources\AbstractIiifResource3;
+use iiif\services\Service;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -237,10 +238,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         if (isset($fileUses)) {
                             
                             foreach ($fileUses as $fileUse) {
-                                
-                                // $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getResource()->getService()->getId();
-                                
-                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getBody()->getId();
+
+                                if ($image->getBody() != null && $image->getBody() instanceof ContentResourceInterface) {
+                                    
+                                    $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUse] = $image->getBody()->getId();
+                                    
+                                }
                                 
                             }
                         }
@@ -338,9 +341,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             
                             foreach ($fileUses as $fileUse) {
                                 
-                                // $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUse] = $image->getResource()->getService()->getId();
-                                
-                                $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUse] = $image->getBody()->getId();
+                                if ($image->getBody() != null && $image->getBody() instanceof ContentResourceInterface) {
+                                    
+                                    $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUse] = $image->getBody()->getId();
+                                    
+                                }
                                 
                             }
                         }
@@ -413,11 +418,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             if ($resource instanceof CanvasInterface) {
                 
-                return $resource->getImageAnnotations()[0]->getSingleService()->getId();
+                return (!empty($resource->getImageAnnotations()) && $resource->getImageAnnotations()->getSingleService() != null) ? $resource->getImageAnnotations()[0]->getSingleService()->getId() : $id;
                 
             } elseif ($resource instanceof ContentResourceInterface) {
                 
-                return $resource->getSingleService()->getId();
+                return $resource->getSingleService() != null && $resource->getSingleService() instanceof Service ? $resource->getSingleService()->getId() : $id;
                 
             } elseif ($resource instanceof AbstractImageService) {
                 
