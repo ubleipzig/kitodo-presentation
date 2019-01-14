@@ -173,6 +173,13 @@ final class tx_dlf_mets_document extends tx_dlf_document {
                 return $service->getImageUrl();
                 
             }
+        
+        } elseif ($fileMimeType = "application/vnd.netfpx") {
+            
+            $baseURL = $fileLocation.(strpos($fileLocation, "?") === false ? "?" : "");
+
+            return $baseURL."&CVT=jpeg";
+            
         }
         
         return $fileLocation;
