@@ -178,6 +178,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
             
             $baseURL = $fileLocation.(strpos($fileLocation, "?") === false ? "?" : "");
 
+            // TODO CVT is an optional IIP server capability; in theory, capabilities should be determined in the object request with '&obj=IIP-server'  
             return $baseURL."&CVT=jpeg";
             
         }
