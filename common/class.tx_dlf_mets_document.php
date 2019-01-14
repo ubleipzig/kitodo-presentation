@@ -1,6 +1,6 @@
 <?php
-use iiif\presentation\IiifHelper;
 use iiif\services\AbstractImageService;
+use iiif\tools\IiifHelper;
 
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>

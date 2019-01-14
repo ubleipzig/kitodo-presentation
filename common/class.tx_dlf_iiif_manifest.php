@@ -13,22 +13,22 @@ use Flow\JSONPath\JSONPath;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
-use iiif\presentation\IiifHelper;
 use iiif\presentation\common\model\resources\AnnotationInterface;
 use iiif\presentation\common\model\resources\CanvasInterface;
 use iiif\presentation\common\model\resources\ContentResourceInterface;
 use iiif\presentation\common\model\resources\IiifResourceInterface;
 use iiif\presentation\common\model\resources\ManifestInterface;
 use iiif\presentation\common\model\resources\RangeInterface;
+use iiif\presentation\v2\model\resources\AbstractIiifResource;
 use iiif\presentation\v2\model\resources\AnnotationList;
 use iiif\presentation\v2\model\resources\Canvas;
 use iiif\presentation\v2\model\resources\Collection;
 use iiif\presentation\v2\model\vocabulary\Motivation;
 use iiif\presentation\v2\model\vocabulary\Types;
-use iiif\services\AbstractImageService;
-use iiif\presentation\v2\model\resources\AbstractIiifResource;
 use iiif\presentation\v3\model\resources\AbstractIiifResource3;
+use iiif\services\AbstractImageService;
 use iiif\services\Service;
+use iiif\tools\IiifHelper;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -1070,7 +1070,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         $content = GeneralUtility::getUrl($location);
 
-        if (!class_exists('\\iiif\\presentation\\IiifHelper', false)) {
+        if (!class_exists('\\iiif\\tools\\IiifHelper', false)) {
             
             require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
             

@@ -12,8 +12,8 @@
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_NOTICE;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
-use iiif\presentation\IiifHelper;
 use iiif\presentation\common\model\resources\IiifResourceInterface;
+use iiif\tools\IiifHelper;
 
 /**
  * Document class 'tx_dlf_document' for the 'dlf' extension.
