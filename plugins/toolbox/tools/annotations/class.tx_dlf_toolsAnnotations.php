@@ -85,9 +85,9 @@ class tx_dlf_toolsAnnotations extends tx_dlf_plugin {
 
         }
 
-        $annotationLists = $this->doc->physicalStructureInfo[$this->doc->physicalStructure[$this->piVars['page']]]['annotationLists'];
+        $annotationContainers = $this->doc->physicalStructureInfo[$this->doc->physicalStructure[$this->piVars['page']]]['annotationContainers'];
         
-        if ($annotationLists != null && sizeof($annotationLists)>0) {
+        if ($annotationContainers != null && sizeof($annotationContainers)>0) {
             $markerArray['###ANNOTATION_SELECT###'] = '<a class="select switchoff" id="tx-dlf-tools-annotations" title="" data-dic="annotations-on:'
                 .$this->pi_getLL('annotations-on', '', TRUE).';annotations-off:'
                     .$this->pi_getLL('annotations-off', '', TRUE).'">&nbsp;</a>';

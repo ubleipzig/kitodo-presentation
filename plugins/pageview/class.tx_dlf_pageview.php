@@ -48,7 +48,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
      */
     protected $fulltexts = array ();
     
-    protected $annotationLists = array();
+    protected $annotationContainers = array();
 
     /**
      * Adds Viewer javascript
@@ -99,7 +99,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
 						div: "'.$this->conf['elementId'].'",
 						images: '.json_encode($this->images).',
 						fulltexts: '.json_encode($this->fulltexts).',
-                        annotationLists: '.json_encode($this->annotationLists).',
+                        annotationContainers: '.json_encode($this->annotationContainers).',
 						useInternalProxy: '.($this->conf['useInternalProxy'] ? 1 : 0).'
 					})
 				}
@@ -328,7 +328,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
 
     }
     
-    public function getAnnotationLists($page)
+    public function getAnnotationContainers($page)
     {
         if ($this->doc instanceof tx_dlf_iiif_manifest) {
             
@@ -340,29 +340,29 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                 
                 $canvas = $iiif->getContainedResourceById($canvasId);
                 
-                /* @var $canvas \iiif\presentation\v2\model\resources\Canvas */
+                /* @var $canvas iiif\presentation\common\model\resources\CanvasInterface */
                 
-                if ($canvas!=null && $canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
+                if ($canvas!=null && !empty($canvas->getPossibleTextAnnotationContainers())) {
                     
-                    $annotationLists = array();
+                    $annotationContainers = array();
                     
-                    foreach ($canvas->getOtherContent() as $annotationList) {
+                    foreach ($canvas->getPossibleTextAnnotationContainers() as $annotationContainer) {
                         
-                        if ($annotationList->getResources() != null) {
+                        if ($annotationContainer->getTextAnnotations() != null) {
                             
-                            foreach ($annotationList->getResources() as $annotation) {
+                            foreach ($annotationContainer->getResources() as $annotation) {
                                 
-                                /* @var $annotation \iiif\presentation\v2\model\resources\Annotation */
+                                /* @var $annotation \iiif\presentation\common\model\resources\AnnotationInterface */
                                 
                                 if ($annotation->getMotivation() == Motivation::PAINTING
-                                    && $annotation->getResource() != null 
-                                    && $annotation->getResource()->getFormat() == "text/plain"
-                                    && $annotation->getResource()->getChars() != null) {
+                                    && $annotation->getBody() != null 
+                                    && $annotation->getBody()->getFormat() == "text/plain"
+                                    && $annotation->getBody()->getChars() != null) {
                                         $annotationListData = [];
-                                        $annotationListData["uri"] = $annotationList->getId();
-                                        $annotationListData["label"] = $annotationList->getLabelForDisplay();
+                                        $annotationListData["uri"] = $annotationContainer->getId();
+                                        $annotationListData["label"] = $annotationContainer->getLabelForDisplay();
                                         
-                                        $annotationLists[] = $annotationListData;
+                                        $annotationContainers[] = $annotationListData;
                                         
                                         break;
                                     
@@ -380,7 +380,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                             "width" => $canvas->getWidth(),
                             "height" => $canvas->getHeight(),
                         ],
-                        "annotationLists"=>$annotationLists
+                        "annotationContainers"=>$annotationContainers
                     ];
                     
                     return $result;
@@ -457,13 +457,13 @@ class tx_dlf_pageview extends tx_dlf_plugin {
         // Get image data.
         $this->images[0] = $this->getImage($this->piVars['page']);
         $this->fulltexts[0] = $this->getFulltext($this->piVars['page']);
-        $this->annotationLists[0] = $this->getAnnotationLists($this->piVars['page']);
+        $this->annotationContainers[0] = $this->getAnnotationContainers($this->piVars['page']);
 
         if ($this->piVars['double'] && $this->piVars['page'] < $this->doc->numPages) {
 
             $this->images[1] = $this->getImage($this->piVars['page'] + 1);
             $this->fulltexts[1] = $this->getFulltext($this->piVars['page'] + 1);
-            $this->annotationLists[1] = $this->getAnnotationLists($this->piVars['page'] + 1);
+            $this->annotationContainers[1] = $this->getAnnotationContainers($this->piVars['page'] + 1);
         }
 
         // Get the controls for the map.

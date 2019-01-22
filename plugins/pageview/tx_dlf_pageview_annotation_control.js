@@ -30,15 +30,15 @@ if (jQuery.fn.scrollTo === undefined) {
 
 class DlfAnnotationControl {
     
-    constructor(map, image, annotationLists) {
+    constructor(map, image, annotationContainers) {
         
         this.map = map;
         
         this.image = image;
         
-        this.annotationLists = annotationLists.annotationLists;
+        this.annotationContainers = annotationContainers.annotationContainers;
         
-        this.canvas = annotationLists.canvas;
+        this.canvas = annotationContainers.canvas;
         
         this.annotationData;        
         
@@ -259,7 +259,7 @@ class DlfAnnotationControl {
         // if the activate method is called for the first time fetch
         // fulltext data from server
         if (this.annotationData === undefined)  {
-            this.annotationData = this.fetchAnnotationListsFromServer(this.annotationLists, this.image, this.canvas);
+            this.annotationData = this.fetchAnnotationContainersFromServer(this.annotationContainers, this.image, this.canvas);
 
             if (this.annotationData !== undefined) {
                 
@@ -355,11 +355,11 @@ class DlfAnnotationControl {
     }
     
     
-    fetchAnnotationListsFromServer(annotationLists, image, canvas, optOffset) {
+    fetchAnnotationContainersFromServer(annotationContainers, image, canvas, optOffset) {
         var annotationListData = [],
             parser;
         parser = new DlfIiifAnnotationParser(image, canvas.width, canvas.height, optOffset);
-        annotationLists.forEach(function(annotationList){
+        annotationContainers.forEach(function(annotationList){
             var responseJson;
             var request = $.ajax({
                 url: annotationList.uri,

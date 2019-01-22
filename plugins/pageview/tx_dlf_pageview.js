@@ -59,7 +59,7 @@ var dlfViewer = function(settings){
      * @type {Array.<string|?>}
      * @private
      */
-    this.annotationLists = dlfUtils.exists(settings.annotationLists) ? settings.annotationLists : [];
+    this.annotationContainers = dlfUtils.exists(settings.annotationContainers) ? settings.annotationContainers : [];
     
     /**
      * @type {Array.<number>}
@@ -162,9 +162,9 @@ dlfViewer.prototype.addCustomControls = function(controlNames) {
     } else {
         $('#tx-dlf-tools-fulltext').remove();
     }
-    if (this.annotationLists[0] !== undefined && this.annotationLists[0].annotationLists !== undefined && this.annotationLists[0].annotationLists.length > 0 && this.images.length == 1) {
+    if (this.annotationContainers[0] !== undefined && this.annotationContainers[0].annotationContainers !== undefined && this.annotationContainers[0].annotationContainers.length > 0 && this.images.length == 1) {
     	// Adds annotation behavior only if there are annotations available and vie is single page
-    	annotationControl = new DlfAnnotationControl(this.map, this.images[0], this.annotationLists[0]);
+    	annotationControl = new DlfAnnotationControl(this.map, this.images[0], this.annotationContainers[0]);
     }
     else {
         $('#tx-dlf-tools-annotations').remove();

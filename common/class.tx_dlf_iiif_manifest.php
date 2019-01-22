@@ -1,4 +1,4 @@
-<?php
+ <?php
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -13,6 +13,7 @@ use Flow\JSONPath\JSONPath;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
+use iiif\presentation\common\model\resources\AnnotationContainerInterface;
 use iiif\presentation\common\model\resources\AnnotationInterface;
 use iiif\presentation\common\model\resources\CanvasInterface;
 use iiif\presentation\common\model\resources\ContentResourceInterface;
@@ -20,8 +21,6 @@ use iiif\presentation\common\model\resources\IiifResourceInterface;
 use iiif\presentation\common\model\resources\ManifestInterface;
 use iiif\presentation\common\model\resources\RangeInterface;
 use iiif\presentation\v2\model\resources\AbstractIiifResource;
-use iiif\presentation\v2\model\resources\AnnotationList;
-use iiif\presentation\v2\model\resources\Canvas;
 use iiif\presentation\v2\model\resources\Collection;
 use iiif\presentation\v2\model\vocabulary\Motivation;
 use iiif\presentation\v2\model\vocabulary\Types;
@@ -297,16 +296,15 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         
                         $this->physicalStructureInfo[$elements[$canvasOrder]]['contentIds']=null;
                         
-                        $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'] = null;
+                        $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationContainers'] = null;
                         
-                        // TODO abstraction for AnnotationList / AnnotationPage
-                        if ($canvas instanceof Canvas && $canvas->getOtherContent() != null && sizeof($canvas->getOtherContent())>0) {
+                        if (!empty($canvas->getPossibleTextAnnotationContainers())) {
                             
-                            $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'] = array();
+                            $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationContainers'] = array();
                             
-                            foreach ($canvas->getOtherContent() as $annotationList) {
+                            foreach ($canvas->getPossibleTextAnnotationContainers() as $annotationContainer) {
                                 
-                                $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationLists'][] = $annotationList->getId();
+                                $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationContainers'][] = $annotationContainer->getId();
                                 
                             }
                             
@@ -428,7 +426,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
                 return $resource->getId();
                 
-            } elseif ($resource instanceof AnnotationList) {
+            } elseif ($resource instanceof AnnotationContainerInterface) {
                 
                 return $id;
                 
@@ -989,6 +987,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
         }
         
+        // TODO remove presentation api 2 specifics 
+        
         $this->ensureHasFulltextIsSet();
         
         if ($this->hasFulltext) {
@@ -1010,7 +1010,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     
                     $annotationList = $this->iiif->getContainedResourceById($annotationListId);
                     
-                    /* @var $annotationList AnnotationList */
+                    /* @var $annotationList \iiif\presentation\v2\model\resources\AnnotationList */
                     foreach ($annotationList->getResources() as $annotation) {
                         
                         if ($annotation->getMotivation() == Motivation::PAINTING && $annotation->getResource()!=null &&
@@ -1147,6 +1147,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             foreach ($canvases as $canvas) {
                 
+                //TODO remove presentation api 2 specifics
                 if ($canvas->getOtherContent() != null) {
                     
                     foreach ($canvas->getOtherContent() as $annotationList) {
