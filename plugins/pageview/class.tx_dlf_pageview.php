@@ -9,8 +9,8 @@
  * LICENSE.txt file that was distributed with this source code.
  */
 
-use iiif\presentation\v2\model\resources\Manifest;
 use iiif\presentation\v2\model\vocabulary\Motivation;
+use iiif\presentation\common\model\resources\ManifestInterface;
 
 /**
  * Plugin 'DLF: Pageview' for the 'dlf' extension.
@@ -336,7 +336,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
             
             $iiif = $this->doc->getIiif();
             
-            if ($iiif instanceof Manifest) {
+            if ($iiif instanceof ManifestInterface) {
                 
                 $canvas = $iiif->getContainedResourceById($canvasId);
                 
