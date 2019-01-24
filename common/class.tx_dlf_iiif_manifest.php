@@ -28,6 +28,7 @@ use iiif\presentation\v3\model\resources\AbstractIiifResource3;
 use iiif\services\AbstractImageService;
 use iiif\services\Service;
 use iiif\tools\IiifHelper;
+use iiif\presentation\v1\model\resources\AbstractIiifResource1;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -100,7 +101,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         if (!isset($this->iiifVersion)) {
             
-            if ($this->iiif instanceof AbstractIiifResource) {
+            if ($this->iiif instanceof AbstractIiifResource1) {
+                
+                $this->iiifVersion = 'IIIF1';
+                
+            } elseif ($this->iiif instanceof AbstractIiifResource) {
                 
                 $this->iiifVersion = 'IIIF2';
                 
@@ -722,7 +727,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
             }
             
-            if ($iiifResource->getMetadata() != null) {
+            if (!empty($iiifResource->getMetadata())) {
 
                 foreach ($iiifResource->getMetadataForDisplay() as $metadata)  {
                     
