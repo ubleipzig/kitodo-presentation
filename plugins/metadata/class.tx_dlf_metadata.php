@@ -1,4 +1,6 @@
 <?php
+use iiif\context\IRI;
+
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -69,6 +71,25 @@ class tx_dlf_metadata extends tx_dlf_plugin {
                 $this->conf['originalIiifMetadata'] = 0;
                 
             }
+
+            if (!isset($this->conf['displayIiifDescription'])) {
+                
+                $this->conf['displayIiifDescription'] = 1;
+                
+            }
+        
+            if (!isset($this->conf['displayIiifRights'])) {
+                
+                $this->conf['originalIiifMetadata'] = 1;
+                
+            }
+            
+            if (!isset($this->conf['displayIiifLinks'])) {
+                
+                $this->conf['displayIiifLinks'] = 1;
+                
+            }
+            
         }
         
         $useOriginalIiifManifestMetadata = $this->conf['originalIiifMetadata'] > 0 && $this->doc instanceof tx_dlf_iiif_manifest;
@@ -84,7 +105,6 @@ class tx_dlf_metadata extends tx_dlf_plugin {
 
                 foreach ($this->doc->smLinks['p2l'][$this->doc->physicalStructure[$this->piVars['page']]] as $logId) {
 
-                    // TODO Move METS specific part somewhere else
                     $count = $this->doc->getStructureDepth($logId);
 
                     $ids[$count][] = $logId;
@@ -244,45 +264,99 @@ class tx_dlf_metadata extends tx_dlf_plugin {
                 
             } else {
                 
-                $iiifwrap['key']['wrap'] = '<dt>|</dt>';
-                $iiifwrap['value']['required'] = 1;
-                $iiifwrap['value']['wrap'] = '<dd>|</dd>';
+                $iiifwrap['key.']['wrap'] = '<dt>|</dt>';
+                $iiifwrap['value.']['required'] = 1;
+                $iiifwrap['value.']['wrap'] = '<dd>|</dd>';
             }
+            
+            $iiifLink=[];
+            
+            $iiifLink['key.']['wrap'] = '<dt>|</dt>';
+            $iiifLink['value.']['required'] = 1;
+            $iiifLink['value.']['setContentToCurrent'] = 1;
+            $iiifLink['value.']['typolink.']['parameter.']['current'] = 1;
+            $iiifLink['value.']['wrap'] = '<dd>|</dd>';
             
             // Save original data array.
             $cObjData = $this->cObj->data;
             
             foreach ($metadataArray as $metadata) {
                 
-                $markerArray['###METADATA###'] = '';
                 
-                // Reset content object's data array.
-                $this->cObj->data = $cObjData;
-                
-                // Load all the metadata values into the content object's data array.
-                foreach ($metadata as $label => $value) {
+                foreach ($metadata as $key => $group) {
+
+                    $markerArray['###METADATA###'] = '<span class="tx-dlf-metadata-group">'.$this->pi_getLL($key).'</span>';
                     
-                    if ($label == '_id') continue; 
+                    // Reset content object's data array.
+                    $this->cObj->data = $cObjData;
                     
-                    if (is_array($value)) {
+                    if (!is_array($group)) {
+                      
+                        if ($key == '_id') continue;
                         
-                        $this->cObj->data[$label] = implode($this->conf['separator'], $value);
+                        $this->cObj->data[$key] = $group;
+                        
+                        if (IRI::isAbsoluteIri($this->cObj->data[$key]) && (($scheme = (new IRI($this->cObj->data[$key]))->getScheme()) == 'http' || $scheme == 'https')) {
+                            
+                            $field = $this->cObj->stdWrap('', $iiifLink['key.']);
+                            
+                            $field .= $this->cObj->stdWrap($this->cObj->data[$key], $iiifLink['value.']);
+                            
+                        } else {
+                            
+                            $field = $this->cObj->stdWrap('', $iiifwrap['key.']);
+                            
+                            $field .= $this->cObj->stdWrap($this->cObj->data[$key], $iiifwrap['value.']);
+                            
+                        }
+                        
+                        $markerArray['###METADATA###'] .= $this->cObj->stdWrap($field, $fieldwrap['all.']);
                         
                     } else {
                         
-                        $this->cObj->data[$label] = $value;
-                        
+                        // Load all the metadata values into the content object's data array.
+                        foreach ($group as $label => $value) {
+                            
+                            if ($label == '_id') continue;
+                            
+                            if (is_array($value)) {
+                                
+                                $this->cObj->data[$label] = implode($this->conf['separator'], $value);
+                                
+                            } else {
+                                
+                                $this->cObj->data[$label] = $value;
+                                
+                            }
+                            
+                            if (IRI::isAbsoluteIri($this->cObj->data[$label]) && (($scheme = (new IRI($this->cObj->data[$label]))->getScheme()) == 'http' || $scheme == 'https')) {
+
+                                $nolabel = $this->cObj->data[$label] == $label;
+                                
+                                $field = $this->cObj->stdWrap($nolabel ? '' : htmlspecialchars($label), $iiifLink['key.']);
+                                
+                                $field .= $this->cObj->stdWrap($this->cObj->data[$label], $iiifLink['value.']);
+                                
+                                
+                            } else {
+                                
+                                $field = $this->cObj->stdWrap(htmlspecialchars($label), $iiifwrap['key.']);
+                                
+                                $field .= $this->cObj->stdWrap($this->cObj->data[$label], $iiifwrap['value.']);
+                                
+                            }
+                            
+                            $markerArray['###METADATA###'] .= $this->cObj->stdWrap($field, $fieldwrap['all.']);
+                            
+                        }
+                    
                     }
                     
-                    $field = $this->cObj->stdWrap(htmlspecialchars($label), $iiifwrap['key.']);
-                    
-                    $field .= $this->cObj->stdWrap(htmlspecialchars($this->cObj->data[$label]), $iiifwrap['value.']);
-                    
-                    $markerArray['###METADATA###'] .= $this->cObj->stdWrap($field, $fieldwrap['all.']);
+                    $output .= $this->cObj->substituteMarkerArray($subpart['block'], $markerArray);
                     
                 }
+                
 
-                $output .= $this->cObj->substituteMarkerArray($subpart['block'], $markerArray);
             }
             
         } else {

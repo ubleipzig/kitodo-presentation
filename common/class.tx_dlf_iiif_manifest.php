@@ -20,15 +20,15 @@ use iiif\presentation\common\model\resources\ContentResourceInterface;
 use iiif\presentation\common\model\resources\IiifResourceInterface;
 use iiif\presentation\common\model\resources\ManifestInterface;
 use iiif\presentation\common\model\resources\RangeInterface;
-use iiif\presentation\v2\model\resources\AbstractIiifResource;
+use iiif\presentation\v2\model\resources\AbstractIiifResource2;
 use iiif\presentation\v2\model\resources\Collection;
-use iiif\presentation\v2\model\vocabulary\Motivation;
 use iiif\presentation\v2\model\vocabulary\Types;
 use iiif\presentation\v3\model\resources\AbstractIiifResource3;
 use iiif\services\AbstractImageService;
 use iiif\services\Service;
 use iiif\tools\IiifHelper;
 use iiif\presentation\v1\model\resources\AbstractIiifResource1;
+use iiif\presentation\common\vocabulary\Motivation;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -105,7 +105,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
                 $this->iiifVersion = 'IIIF1';
                 
-            } elseif ($this->iiif instanceof AbstractIiifResource) {
+            } elseif ($this->iiif instanceof AbstractIiifResource2) {
                 
                 $this->iiifVersion = 'IIIF2';
                 
@@ -707,11 +707,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     }
     
     
-    public function getManifestMetadata($id, $cPid = 0) {
+    public function getManifestMetadata($id, $cPid = 0, $withDescription = true, $withRights = true, $withRelated = true) {
         
         if (!empty($this->originalMetadataArray[$id])) {
             
-            return $this->metadataArray[$id];
+            return $this->originalMetadataArray[$id];
             
         }
         
@@ -723,15 +723,53 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             if ($iiifResource->getLabel()!=null && $iiifResource->getLabel() != "") {
                 
-                $result['Label'] = $iiifResource->getLabel();
+                $result['label'] = $iiifResource->getLabel();
                 
             }
             
             if (!empty($iiifResource->getMetadata())) {
+                
+                $result['metadata'] = [];
 
                 foreach ($iiifResource->getMetadataForDisplay() as $metadata)  {
                     
-                    $result[$metadata['label']] = $metadata['value'];
+                    $result['metadata'][$metadata['label']] = $metadata['value'];
+                    
+                }
+                
+            }
+            
+            if ($withDescription && !empty($iiifResource->getSummary())) {
+                
+                $result["description"] = $iiifResource->getSummaryForDisplay();
+                
+            }
+            
+            if ($withRights) {
+                
+                if (!empty($iiifResource->getRights())) {
+                    
+                    $result["rights"] = $iiifResource->getRights();
+                    
+                }
+
+                if (!empty($iiifResource->getRequiredStatement())) {
+                    
+                    $result["requiredStatement"] = $iiifResource->getRequiredStatementForDisplay();
+
+                }
+                
+            }
+            
+            if ($withRelated && !empty($iiifResource->getWeblinksForDisplay())) {
+                
+                $result["weblinks"] = [];
+                
+                foreach ($iiifResource->getWeblinksForDisplay() as $link) {
+                    
+                    $key = array_key_exists("label", $link) ? $link["label"] : $link["@id"];
+                    
+                    $result["weblinks"][$key] = $link["@id"]; 
                     
                 }
                 
@@ -1018,7 +1056,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     /* @var $annotationList \iiif\presentation\v2\model\resources\AnnotationList */
                     foreach ($annotationList->getResources() as $annotation) {
                         
-                        if ($annotation->getMotivation() == Motivation::PAINTING && $annotation->getResource()!=null &&
+                        if (Motivation::isPaintingMotivation($annotation->getMotivation()) && $annotation->getResource()!=null &&
                         $annotation->getResource()->getType() == Types::CNT_CONTENTASTEXT && $annotation->getResource()->getChars()!=null) {
                             
                             $xywhFragment = $annotation->getOn();
@@ -1077,7 +1115,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
 
         if (!class_exists('\\iiif\\tools\\IiifHelper', false)) {
             
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/include.php'));
             
         }
         
@@ -1163,7 +1201,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                                 
                                 /* @var  $annotation \iiif\presentation\v2\model\resources\Annotation */
                                 // Assume that a plain text annotation which is meant to be displayed to the user represents the full text
-                                if ($annotation->getMotivation() == Motivation::PAINTING && 
+                                if (Motivation::isPaintingMotivation($annotation->getMotivation()) && 
                                     $annotation->getResource() != null &&
                                     $annotation->getResource()->getFormat() == "text/plain" && 
                                     $annotation->getResource()->getChars() != null) {

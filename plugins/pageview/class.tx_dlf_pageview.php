@@ -9,8 +9,8 @@
  * LICENSE.txt file that was distributed with this source code.
  */
 
-use iiif\presentation\v2\model\vocabulary\Motivation;
 use iiif\presentation\common\model\resources\ManifestInterface;
+use iiif\presentation\common\vocabulary\Motivation;
 
 /**
  * Plugin 'DLF: Pageview' for the 'dlf' extension.
@@ -354,7 +354,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                                 
                                 /* @var $annotation \iiif\presentation\common\model\resources\AnnotationInterface */
                                 
-                                if ($annotation->getMotivation() == Motivation::PAINTING
+                                if (Motivation::isPaintingMotivation($annotation->getMotivation()) 
                                     && $annotation->getBody() != null 
                                     && $annotation->getBody()->getFormat() == "text/plain"
                                     && $annotation->getBody()->getChars() != null) {
