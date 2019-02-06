@@ -160,7 +160,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
             
             if (!class_exists('\\iiif\\presentation\\IiifHelper', false)) {
                 
-                require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/classloader.php'));
+                require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/include.php'));
                 
             }
             
