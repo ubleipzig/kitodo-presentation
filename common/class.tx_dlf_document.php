@@ -456,7 +456,14 @@ abstract class tx_dlf_document {
                             
                         }
                         
+                        // Load plugin configuration.
+                        $conf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
+                        
                         IiifHelper::setUrlReader(tx_dlf_iiif_urlreader::getInstance());
+                        
+                        IiifHelper::setMaxThumbnailHeight($conf['iiifThumbnailHeight']);
+
+                        IiifHelper::setMaxThumbnailWidth($conf['iiifThumbnailWidth']);
                         
                         $iiif = IiifHelper::loadIiifResource($contentAsJsonArray);
                         

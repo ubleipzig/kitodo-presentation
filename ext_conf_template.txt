@@ -34,6 +34,15 @@ fileGrpFulltext = FULLTEXT
 # cat=Files; type=string; label=LLL:EXT:dlf/locallang.xml:config.fileGrpAudio
 fileGrpAudio = AUDIO
 
+# cat=IIIF; type=boolean; label=LLL:EXT:dlf/locallang.xml:config.indexAnnotations
+indexAnnotations = 0
+
+# cat=IIIF; type=int[1-2000]; label=LLL:EXT:dlf/locallang.xml:config.iiifThumbnailWidth
+iiifThumbnailWidth = 150
+
+# cat=IIIF; type=int[1-2000]; label=LLL:EXT:dlf/locallang.xml:config.iiifThumbnailHeight
+iiifThumbnailHeight = 150
+
 # cat=Solr; type=user[EXT:dlf/hooks/class.tx_dlf_em.php:tx_dlf_em->checkSolrConnection]; label=LLL:EXT:dlf/locallang.xml:config.solrConnect
 solrConnect = 0
 

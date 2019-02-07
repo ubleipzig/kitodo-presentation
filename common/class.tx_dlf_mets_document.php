@@ -164,7 +164,13 @@ final class tx_dlf_mets_document extends tx_dlf_document {
                 
             }
             
+            $conf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
+            
             IiifHelper::setUrlReader(tx_dlf_iiif_urlreader::getInstance());
+            
+            IiifHelper::setMaxThumbnailHeight($conf['iiifThumbnailHeight']);
+            
+            IiifHelper::setMaxThumbnailWidth($conf['iiifThumbnailWidth']);
             
             $service = IiifHelper::loadIiifResource($fileLocation);
             
