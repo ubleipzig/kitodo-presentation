@@ -1,4 +1,4 @@
- <?php
+<?php
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -455,8 +455,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         if ($fileResource instanceof CanvasInterface) {
             
-            // $format = $fileResource->getImages()[0]->getResource()->getFormat();
-            
             $format = "application/vnd.kitodo.iiif";
             
         } elseif ($fileResource instanceof AnnotationInterface) {
@@ -468,7 +466,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
         } elseif ($fileResource instanceof ContentResourceInterface) {
             
-            // $format = $fileResource->getFormat();
+            if ($fileResource->isText() || $fileResource->isImage() && ($fileResource->getSingleService() == null || !($fileResource->getSingleService() instanceof AbstractImageService))) {
+                
+                return $fileResource->getFormat();
+                
+            }
             
             $format = "application/vnd.kitodo.iiif";
             
@@ -836,7 +838,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     
                     $metadata[$resArray['index_name']] = array (trim((string) $values));
                     
-                } elseif ($values instanceof JSONPath && is_array($values->data()) && count($values->data()>1 )) {
+                } elseif ($values instanceof JSONPath && is_array($values->data()) && count($values->data())>1 ) {
                     
                     $metadata[$resArray['index_name']] = array ();
                     
