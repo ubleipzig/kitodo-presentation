@@ -44,6 +44,29 @@ abstract class tx_dlf_document {
      */
     public static $extKey = 'dlf';
 
+    
+    /**
+     * This holds the configuration for all supported metadata encodings
+     * @see loadFormats()
+     *
+     * @var	array
+     * @access protected
+     */
+    protected $formats = array (
+        'OAI' => array (
+            'rootElement' => 'OAI-PMH',
+            'namespaceURI' => 'http://www.openarchives.org/OAI/2.0/',
+        ),
+        'METS' => array (
+            'rootElement' => 'mets',
+            'namespaceURI' => 'http://www.loc.gov/METS/',
+        ),
+        'XLINK' => array (
+            'rootElement' => 'xlink',
+            'namespaceURI' => 'http://www.w3.org/1999/xlink',
+        )
+    );
+    
     /**
      * Are there any fulltext files available?
      *
@@ -597,6 +620,94 @@ abstract class tx_dlf_document {
      * @return	string		The physical structure node's raw text
      */
     public abstract function getRawText($id);
+    
+    protected function getRawTextFromXml($id) {
+        
+        $rawText = '';
+        
+        // Load available text formats, ...
+        $this->loadFormats();
+        
+        // ... physical structure ...
+        $this->_getPhysicalStructure();
+        
+        // ... and extension configuration.
+        $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
+        
+        if (!empty($this->physicalStructureInfo[$id])) {
+            
+            // Get fulltext file.
+            $file = $this->getFileLocation($this->physicalStructureInfo[$id]['files'][$extConf['fileGrpFulltext']]);
+            
+            // Turn off libxml's error logging.
+            $libxmlErrors = libxml_use_internal_errors(TRUE);
+            
+            // Disables the functionality to allow external entities to be loaded when parsing the XML, must be kept.
+            $previousValueOfEntityLoader = libxml_disable_entity_loader(TRUE);
+            
+            // Load XML from file.
+            $rawTextXml = simplexml_load_string(\TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($file));
+            
+            // Reset entity loader setting.
+            libxml_disable_entity_loader($previousValueOfEntityLoader);
+            
+            // Reset libxml's error logging.
+            libxml_use_internal_errors($libxmlErrors);
+            
+            // Get the root element's name as text format.
+            $textFormat = strtoupper($rawTextXml->getName());
+            
+        } else {
+            
+            if (TYPO3_DLOG) {
+                
+                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->getRawText('.$id.')] Invalid structure node @ID "'.$id.'"'. self::$extKey, SYSLOG_SEVERITY_WARNING);
+                
+            }
+            
+            return $rawText;
+            
+        }
+        
+        // Is this text format supported?
+        if (!empty($this->formats[$textFormat])) {
+            
+            if (!empty($this->formats[$textFormat]['class'])) {
+                
+                $class = $this->formats[$textFormat]['class'];
+                
+                // Get the raw text from class.
+                if (class_exists($class) && ($obj = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance($class)) instanceof tx_dlf_fulltext) {
+                    
+                    $rawText = $obj->getRawText($rawTextXml);
+                    
+                    $this->rawTextArray[$id] = $rawText;
+                    
+                } else {
+                    
+                    if (TYPO3_DLOG) {
+                        
+                        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->getRawText('.$id.')] Invalid class/method "'.$class.'->getRawText()" for text format "'.$textFormat.'"', self::$extKey, SYSLOG_SEVERITY_WARNING);
+                        
+                    }
+                    
+                }
+                
+            }
+            
+        } else {
+            
+            if (TYPO3_DLOG) {
+                
+                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->getRawText('.$id.')] Unsupported text format "'.$textFormat.'" in physical node with @ID "'.$id.'"', self::$extKey, SYSLOG_SEVERITY_WARNING);
+                
+            }
+            
+        }
+        
+        return $rawText;
+        
+    }
 
     /**
      * This determines a title for the given document
@@ -789,8 +900,37 @@ abstract class tx_dlf_document {
      *
      * @return	void
      */
-    protected abstract function loadFormats();
-
+    protected function loadFormats() {
+        
+        if (!$this->formatsLoaded) {
+            
+            // Get available data formats from database.
+            $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
+                'tx_dlf_formats.type AS type,tx_dlf_formats.root AS root,tx_dlf_formats.namespace AS namespace,tx_dlf_formats.class AS class',
+                'tx_dlf_formats',
+                'tx_dlf_formats.pid=0'.tx_dlf_helper::whereClause('tx_dlf_formats'),
+                '',
+                '',
+                ''
+                );
+            
+            while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
+                
+                // Update format registry.
+                $this->formats[$resArray['type']] = array (
+                    'rootElement' => $resArray['root'],
+                    'namespaceURI' => $resArray['namespace'],
+                    'class' => $resArray['class']
+                );
+                
+            }
+            
+            $this->formatsLoaded = TRUE;
+            
+        }
+        
+    }
+    
     /**
      * Register all available namespaces for a SimpleXMLElement object
      *

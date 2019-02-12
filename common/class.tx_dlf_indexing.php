@@ -1,4 +1,7 @@
 <?php
+use iiif\tools\IiifHelper;
+use iiif\presentation\common\model\resources\AnnotationContainerInterface;
+
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -717,29 +720,20 @@ class tx_dlf_indexing {
         // Read extension configuration.
         $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
 
-        // TODO: METS/ALTO-specific
-        if (!empty($physicalUnit['files'][$extConf['fileGrpFulltext']])) {
+        if (!empty($physicalUnit['files'][$extConf['fileGrpFulltext']]) || !empty($annotationContainerIds = $physicalUnit['annotationContainers'])) {
             
-            if ($doc instanceof tx_dlf_iiif_manifest) {
-                
-                $annotationListIds = $physicalUnit['files'][$extConf['fileGrpFulltext']];
-                
-                //$jsonContent = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($file);
-                
-                //$annotationList = AnnotationList::fromJson($jsonContent);
-                
-            } else {
+            if (!empty($physicalUnit['files'][$extConf['fileGrpFulltext']])) {
                 
                 $file = $doc->getFileLocation($physicalUnit['files'][$extConf['fileGrpFulltext']]);
-
+                
                 // Load XML file.
                 if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($file)) {
-
+                    
                     // Set user-agent to identify self when fetching XML data.
                     if (!empty($extConf['useragent'])) {
-    
+                        
                         @ini_set('user_agent', $extConf['useragent']);
-    
+                        
                     }
                     
                     // Turn off libxml's error logging.
@@ -764,11 +758,35 @@ class tx_dlf_indexing {
                     }
                     
                 } else {
-    
+                    
                     return 1;
-
+                    
                 }
+                
+            }
+            
+            if (!empty($physicalUnit['annotationContainers'])) {
+                
+                $annotationContainerIds = $physicalUnit['annotationContainers'];
+                
+                foreach ($annotationContainerIds as $annotationContainerId) {
+                    
+                    if (!empty($extConf['useragent'])) {
+                        
+                        @ini_set('user_agent', $extConf['useragent']);
+                        
+                    }
+                    
+                    $annotationContainer = IiifHelper::loadIiifResource(\TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($annotationContainerId));
 
+                    if (!($annotationContainer instanceof AnnotationContainerInterface)) {
+                        
+                        return 1;
+                        
+                    }
+                    
+                }
+                
             }
 
             // Load class.

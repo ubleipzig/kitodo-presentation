@@ -254,36 +254,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                         
                         $this->ensureHasFulltextIsSet();
 
-//                             if ($this->hasFulltext && isset($fileUseFulltext) && $canvas->getOtherContent() != null) {
-                                
-//                                 foreach ($canvas->getOtherContent() as $annotationList) {
-                                    
-//                                     if ($annotationList->getResources() != null) {
-                                        
-//                                         foreach ($annotationList->getResources() as $annotation) {
-                                            
-//                                             /* @var  $annotation \iiif\presentation\v2\model\resources\Annotation */
-//                                             if ($annotation->getMotivation() == Motivation::PAINTING &&
-//                                                 $annotation->getResource() != null &&
-//                                                 $annotation->getResource()->getFormat() == "text/plain" &&
-//                                                 $annotation->getResource()->getChars() != null) {
-                                                    
-//                                                     $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseFulltext][] = $annotationList->getId();
-                                                    
-//                                                     $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseFulltext][] = $annotationList->getId();
-                                                    
-//                                                     break;
-                                                    
-//                                                 }
-                                                
-//                                         }
-                                        
-//                                     }
-                                    
-//                                 }
-                                
-//                             }
-                            
                         // populate structural metadata info
                         $elements[$canvasOrder] = $canvas->getId();
                         
@@ -335,6 +305,10 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                                 
                                 $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseFulltext] = $alto[0];
                                 
+                                $this->hasFulltext = true;
+                                
+                                $this->hasFulltextSet = true;
+                            
                             }
                         
                         }
@@ -1002,19 +976,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
 
     }
         
-    
-    
-
-    /**
-     * {@inheritDoc}
-     * @see tx_dlf_document::loadFormats()
-     */
-    protected function loadFormats()
-    {
-        // do nothing - METS specific
-        
-    }
-    
     protected function saveParentDocumentIfExists()
     {
         // Do nothing
@@ -1046,42 +1007,51 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             if (!empty($this->physicalStructureInfo[$id])) {
                 
-                // Get fulltext file.
-                $annotationListIds = $this->physicalStructureInfo[$id]['files'][$extConf['fileGrpFulltext']];
-                
-                $annotationTexts = array();
-                
-                foreach ($annotationListIds as $annotationListId) {
+                if (!empty($this->physicalStructureInfo[$id]['files'][$extConf['fileGrpFulltext']])) {
                     
-                    $annotationList = $this->iiif->getContainedResourceById($annotationListId);
-                    
-                    /* @var $annotationList \iiif\presentation\v2\model\resources\AnnotationList */
-                    foreach ($annotationList->getResources() as $annotation) {
-                        
-                        if (Motivation::isPaintingMotivation($annotation->getMotivation()) && $annotation->getResource()!=null &&
-                        $annotation->getResource()->getType() == Types::CNT_CONTENTASTEXT && $annotation->getResource()->getChars()!=null) {
-                            
-                            $xywhFragment = $annotation->getOn();
-                            
-                            if ($id == null || $id == '' || ($xywhFragment != null && $xywhFragment->getTargetUri() == $id)) {
-                                
-                                $annotationTexts[] = $annotation->getResource()->getChars();
-                                
-                            }
-                                
-                        }
-                            
-                    }
+                    $rawText = parent::getRawTextFromXml($id);
                     
                 }
                 
-                $rawText = implode(' ', $annotationTexts);
+                // Get annotation containers
+                $annotationContainerIds = $this->physicalStructureInfo[$id]['annotationContainers'];
+                
+                if (!empty($annotationContainerIds)) {
+                    
+                    $annotationTexts = array();
+                    
+                    foreach ($annotationContainerIds as $annotationListId) {
+                        
+                        $annotationContainer = $this->iiif->getContainedResourceById($annotationListId);
+                        
+                        /* @var $annotationContainer \iiif\presentation\common\model\resources\AnnotationContainerInterface */
+                        foreach ($annotationContainer->getTextAnnotations() as $annotation) {
+                            
+                            if (Motivation::isPaintingMotivation($annotation->getMotivation()) && $annotation->getResource()!=null && $annotation->getResource()->getChars()!=null) {
+                                
+                                $xywhFragment = $annotation->getOn();
+                                
+                                if ($id == null || $id == '' || ($xywhFragment != null && $xywhFragment->getTargetUri() == $id)) {
+                                    
+                                    $annotationTexts[] = $annotation->getBody()->getChars();
+                                    
+                                }
+                                
+                            }
+                            
+                        }
+                        
+                    }
+                    
+                    $rawText .= implode(' ', $annotationTexts);
+                    
+                }
                 
             } else {
                 
                 if (TYPO3_DLOG) {
                     
-                    \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->getRawText('.$id.')] Invalid structure node @ID "'.$id.'"'. self::$extKey, SYSLOG_SEVERITY_WARNING);
+                    \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_iiif_manifest->getRawText('.$id.')] Invalid structure node @ID "'.$id.'"'. self::$extKey, SYSLOG_SEVERITY_WARNING);
                     
                 }
                 
