@@ -327,13 +327,13 @@ return array (
         ),
         'document_format' => array (
             'exclude' => 1,
-            'label' => 'METS or IIIF',
+            'label' => 'LLL:EXT:dlf/locallang.xml:tx_dlf_documents.document_format',
             'config' => array (
                 'type' => 'select',
                 'renderType' => 'selectSingle',
                 'items' => array (
-                    array ('METS', 'METS'),
-                    array ('IIIF', 'IIIF'),
+                    array ('LLL:EXT:dlf/locallang.xml:tx_dlf_documents.document_format.mets', 'METS'),
+                    array ('LLL:EXT:dlf/locallang.xml:tx_dlf_documents.document_format.iiif', 'IIIF'),
                 ),
                 'size' => 1,
                 'minitems' => 1,

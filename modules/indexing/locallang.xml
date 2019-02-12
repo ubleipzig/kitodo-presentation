@@ -20,6 +20,7 @@
 			<label index="function.reindexDoc">Index document</label>
 			<label index="function.reindexDocs">Index collection</label>
 			<label index="form.submit">Start indexing</label>
+			<label index="form.location">METS file URL or IIIF manifest IRI</label>
 		</languageKey>
 		<languageKey index="de" type="array">
 			<label index="title">Dokumentindexierung</label>
@@ -27,6 +28,7 @@
 			<label index="function.reindexDoc">Dokument indexieren</label>
 			<label index="function.reindexDocs">Sammlung indexieren</label>
 			<label index="form.submit">Indexierung starten</label>
+			<label index="form.location">URL der METS-Datei oder IRI des IIIF-Manifests</label>
 		</languageKey>
 	</data>
 </T3locallang>

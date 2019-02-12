@@ -122,8 +122,7 @@ class tx_dlf_modIndexing extends tx_dlf_module {
             ''
         );
 
-        // TODO: Ändern!
-        $form = '<label for="tx-dlf-modIndexing-id">METS-Datei:</label>';
+        $form = '<label for="tx-dlf-modIndexing-id">'.$GLOBALS['LANG']->getLL('form.location').':</label>';
 
         $form .= '<input type="text" id="tx-dlf-modIndexing-id" name="'.$this->prefixId.'[id]" value="" /><br />';
 
