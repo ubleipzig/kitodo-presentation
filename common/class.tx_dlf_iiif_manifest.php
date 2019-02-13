@@ -198,6 +198,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
                 $fileUseDownload = $this->getUseGroups('fileGrpDownload');
                 
+                $fileUseFulltext = $this->getUseGroups('fileGrpFulltext');
+                
+                $fileUseThumbs = $this->getUseGroups('fileGrpThumbs');
+                
+                $fileUses = $this->getUseGroups('fileGrps');
+                
                 if (isset($fileUseDownload)) {
                     
                     $docPdfRendering = $this->iiif->getRenderingUrlsForFormat('application/pdf');
@@ -210,16 +216,37 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     
                 }
                 
+                if (isset($fileUseFulltext)) {
+                    
+                    $iiifAlto = $this->iiif->getSeeAlsoUrlsForFormat("application/alto+xml");
+                    
+                    if (empty($iiifAlto)) {
+                        
+                        $iiifAlto = $this->iiif->getSeeAlsoUrlsForProfile("http://www.loc.gov/standards/alto/", true);
+                        
+                    }
+                    
+                    if (!empty($iiifAlto)) {
+                        
+                        // FIXME use all possible alto files?
+                        
+                        $this->mimeTypes[$alto[0]] = "application/alto+xml";
+                        
+                        $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseFulltext] = $iiifAlto[0];
+                        
+                        $this->hasFulltext = true;
+                        
+                        $this->hasFulltextSet = true;
+                        
+                    }
+                    
+                }
+                
+                
                 if (!empty($this->iiif->getDefaultCanvases())) {
                     
                     // canvases have not order property, but the context defines canveses as @list with a specific order, so we can provide an alternative
                     $canvasOrder = 0;
-                    
-                    $fileUseThumbs = $this->getUseGroups('fileGrpThumbs');
-                    
-                    $fileUses = $this->getUseGroups('fileGrps');
-                    
-                    $fileUseFulltext = $this->getUseGroups('fileGrpFulltext');
                     
                     $serviceProfileCache = [];
                     
@@ -277,6 +304,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             
                             $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationContainers'] = array();
                             
+                            $this->physicalStructureInfo[$physSeq[0]]['annotationContainers'] = array();
+                            
                             foreach ($canvas->getPossibleTextAnnotationContainers() as $annotationContainer) {
                                 
                                 $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationContainers'][] = $annotationContainer->getId();
@@ -300,8 +329,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                                 // FIXME use all possible alto files?
                                 
                                 $this->mimeTypes[$alto[0]] = "application/alto+xml";
-                                
-                                $this->physicalStructureInfo[$physSeq[0]]['files'][$fileUseFulltext] = $alto[0];
                                 
                                 $this->physicalStructureInfo[$elements[$canvasOrder]]['files'][$fileUseFulltext] = $alto[0];
                                 
