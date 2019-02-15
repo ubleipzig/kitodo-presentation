@@ -21,14 +21,13 @@ use iiif\presentation\common\model\resources\IiifResourceInterface;
 use iiif\presentation\common\model\resources\ManifestInterface;
 use iiif\presentation\common\model\resources\RangeInterface;
 use iiif\presentation\v2\model\resources\AbstractIiifResource2;
-use iiif\presentation\v2\model\resources\Collection;
-use iiif\presentation\v2\model\vocabulary\Types;
 use iiif\presentation\v3\model\resources\AbstractIiifResource3;
 use iiif\services\AbstractImageService;
 use iiif\services\Service;
 use iiif\tools\IiifHelper;
 use iiif\presentation\v1\model\resources\AbstractIiifResource1;
 use iiif\presentation\common\vocabulary\Motivation;
+use iiif\presentation\common\model\resources\CollectionInterface;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -178,6 +177,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             if ($this->iiif != null) {
                 
+                $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
+                
                 $iiifId = $this->iiif->getId();
                 
                 $physSeq[0] = $iiifId;
@@ -309,6 +310,12 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             foreach ($canvas->getPossibleTextAnnotationContainers() as $annotationContainer) {
                                 
                                 $this->physicalStructureInfo[$elements[$canvasOrder]]['annotationContainers'][] = $annotationContainer->getId();
+                                
+                                if ($extConf['indexAnnotations']) {
+                                    
+                                    $this->hasFulltext = true;
+                                    
+                                }
                                 
                             }
                             
@@ -1040,27 +1047,31 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     
                 }
                 
-                // Get annotation containers
-                $annotationContainerIds = $this->physicalStructureInfo[$id]['annotationContainers'];
-                
-                if (!empty($annotationContainerIds)) {
+                if ($extConf['indexAnnotations'] == 1) {
                     
-                    $annotationTexts = array();
+                    // Get annotation containers
+                    $annotationContainerIds = $this->physicalStructureInfo[$id]['annotationContainers'];
                     
-                    foreach ($annotationContainerIds as $annotationListId) {
+                    if (!empty($annotationContainerIds)) {
                         
-                        $annotationContainer = $this->iiif->getContainedResourceById($annotationListId);
+                        $annotationTexts = array();
                         
-                        /* @var $annotationContainer \iiif\presentation\common\model\resources\AnnotationContainerInterface */
-                        foreach ($annotationContainer->getTextAnnotations() as $annotation) {
+                        foreach ($annotationContainerIds as $annotationListId) {
                             
-                            if (Motivation::isPaintingMotivation($annotation->getMotivation()) && $annotation->getResource()!=null && $annotation->getResource()->getChars()!=null) {
+                            $annotationContainer = $this->iiif->getContainedResourceById($annotationListId);
+                            
+                            /* @var $annotationContainer \iiif\presentation\common\model\resources\AnnotationContainerInterface */
+                            foreach ($annotationContainer->getTextAnnotations() as $annotation) {
                                 
-                                $xywhFragment = $annotation->getOn();
-                                
-                                if ($id == null || $id == '' || ($xywhFragment != null && $xywhFragment->getTargetUri() == $id)) {
+                                if (Motivation::isPaintingMotivation($annotation->getMotivation()) && $annotation->getResource()!=null && $annotation->getResource()->getChars()!=null) {
                                     
-                                    $annotationTexts[] = $annotation->getBody()->getChars();
+                                    $xywhFragment = $annotation->getOn();
+                                    
+                                    if ($id == null || $id == '' || ($xywhFragment != null && $xywhFragment->getTargetUri() == $id)) {
+                                        
+                                        $annotationTexts[] = $annotation->getBody()->getChars();
+                                        
+                                    }
                                     
                                 }
                                 
@@ -1068,9 +1079,9 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             
                         }
                         
+                        $rawText .= implode(' ', $annotationTexts);
+                        
                     }
-                    
-                    $rawText .= implode(' ', $annotationTexts);
                     
                 }
                 
@@ -1130,7 +1141,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         if ($resource != null ){
             
-            if ($resource instanceof ManifestInterface || $resource instanceof Collection) {
+            if ($resource instanceof ManifestInterface) {
                 
                 $this->iiif = $resource;
                 
@@ -1287,7 +1298,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         if ($resource != null) {
             
-            if ($resource instanceof ManifestInterface || $resource instanceof Collection) {
+            if ($resource instanceof ManifestInterface || $resource instanceof CollectionInterface) {
                 
                 $this->iiif = $resource;
                 
