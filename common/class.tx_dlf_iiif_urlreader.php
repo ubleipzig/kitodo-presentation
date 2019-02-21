@@ -1,9 +1,9 @@
 <?php
 
-use iiif\tools\UrlReaderInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use Ubl\Iiif\Tools\UrlReaderInterface;
 
-class tx_dlf_iiif_urlreader implements UrlReaderInterface{
+class tx_dlf_iiif_urlreader implements UrlReaderInterface {
     
     protected static $instance;
     

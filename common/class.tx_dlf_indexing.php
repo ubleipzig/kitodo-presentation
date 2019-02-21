@@ -1,7 +1,4 @@
 <?php
-use iiif\tools\IiifHelper;
-use iiif\presentation\common\model\resources\AnnotationContainerInterface;
-
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -11,6 +8,9 @@ use iiif\presentation\common\model\resources\AnnotationContainerInterface;
  * For the full copyright and license information, please read the
  * LICENSE.txt file that was distributed with this source code.
  */
+
+use Ubl\Iiif\Tools\IiifHelper;
+use Ubl\Iiif\Presentation\Common\Model\Resources\AnnotationContainerInterface;
 
 /**
  * Indexing class 'tx_dlf_indexing' for the 'dlf' extension.

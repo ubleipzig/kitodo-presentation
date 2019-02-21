@@ -13,21 +13,21 @@ use Flow\JSONPath\JSONPath;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
-use iiif\presentation\common\model\resources\AnnotationContainerInterface;
-use iiif\presentation\common\model\resources\AnnotationInterface;
-use iiif\presentation\common\model\resources\CanvasInterface;
-use iiif\presentation\common\model\resources\ContentResourceInterface;
-use iiif\presentation\common\model\resources\IiifResourceInterface;
-use iiif\presentation\common\model\resources\ManifestInterface;
-use iiif\presentation\common\model\resources\RangeInterface;
-use iiif\presentation\v2\model\resources\AbstractIiifResource2;
-use iiif\presentation\v3\model\resources\AbstractIiifResource3;
-use iiif\services\AbstractImageService;
-use iiif\services\Service;
-use iiif\tools\IiifHelper;
-use iiif\presentation\v1\model\resources\AbstractIiifResource1;
-use iiif\presentation\common\vocabulary\Motivation;
-use iiif\presentation\common\model\resources\CollectionInterface;
+use Ubl\Iiif\Presentation\Common\Model\Resources\AnnotationContainerInterface;
+use Ubl\Iiif\Presentation\Common\Model\Resources\AnnotationInterface;
+use Ubl\Iiif\Presentation\Common\Model\Resources\CanvasInterface;
+use Ubl\Iiif\Presentation\Common\Model\Resources\CollectionInterface;
+use Ubl\Iiif\Presentation\Common\Model\Resources\ContentResourceInterface;
+use Ubl\Iiif\Presentation\Common\Model\Resources\IiifResourceInterface;
+use Ubl\Iiif\Presentation\Common\Model\Resources\ManifestInterface;
+use Ubl\Iiif\Presentation\Common\Model\Resources\RangeInterface;
+use Ubl\Iiif\Presentation\Common\Vocabulary\Motivation;
+use Ubl\Iiif\Presentation\V1\Model\Resources\AbstractIiifResource1;
+use Ubl\Iiif\Presentation\V2\Model\Resources\AbstractIiifResource2;
+use Ubl\Iiif\Presentation\V3\Model\Resources\AbstractIiifResource3;
+use Ubl\Iiif\Services\AbstractImageService;
+use Ubl\Iiif\Services\Service;
+use Ubl\Iiif\Tools\IiifHelper;
 
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
@@ -1060,7 +1060,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             
                             $annotationContainer = $this->iiif->getContainedResourceById($annotationListId);
                             
-                            /* @var $annotationContainer \iiif\presentation\common\model\resources\AnnotationContainerInterface */
+                            /* @var $annotationContainer \Ubl\Iiif\Presentation\Common\Model\Resources\AnnotationContainerInterface */
                             foreach ($annotationContainer->getTextAnnotations() as $annotation) {
                                 
                                 if (Motivation::isPaintingMotivation($annotation->getMotivation()) && $annotation->getResource()!=null && $annotation->getResource()->getChars()!=null) {
@@ -1125,7 +1125,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
 
         if (!class_exists('\\iiif\\tools\\IiifHelper', false)) {
             
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/include.php'));
+            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/Iiif/include.php'));
             
         }
         
@@ -1200,7 +1200,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             $manifest = $this->iiif;
             
-            /* @var $manifest \iiif\presentation\v2\model\resources\Manifest */
+            /* @var $manifest \Ubl\Iiif\Presentation\V2\Model\Resources\Manifest */
             
             $canvases = $manifest->getSequences()[0]->getCanvases();
             
@@ -1215,7 +1215,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             
                             foreach ($annotationList->getResources() as $annotation) {
                                 
-                                /* @var  $annotation \iiif\presentation\v2\model\resources\Annotation */
+                                /* @var  $annotation \Ubl\Iiif\Presentation\V2\Model\Resources\Annotation */
                                 // Assume that a plain text annotation which is meant to be displayed to the user represents the full text
                                 if (Motivation::isPaintingMotivation($annotation->getMotivation()) && 
                                     $annotation->getResource() != null &&

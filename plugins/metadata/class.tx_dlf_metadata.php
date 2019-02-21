@@ -1,6 +1,4 @@
 <?php
-use iiif\context\IRI;
-
 /**
  * (c) Kitodo. Key to digital objects e.V. <contact@kitodo.org>
  *
@@ -10,6 +8,8 @@ use iiif\context\IRI;
  * For the full copyright and license information, please read the
  * LICENSE.txt file that was distributed with this source code.
  */
+
+use Ubl\Iiif\Context\IRI;
 
 /**
  * Plugin 'DLF: Metadata' for the 'dlf' extension.

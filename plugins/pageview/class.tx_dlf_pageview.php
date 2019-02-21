@@ -9,8 +9,8 @@
  * LICENSE.txt file that was distributed with this source code.
  */
 
-use iiif\presentation\common\model\resources\ManifestInterface;
-use iiif\presentation\common\vocabulary\Motivation;
+use Ubl\Iiif\Presentation\Common\Model\Resources\ManifestInterface;
+use Ubl\Iiif\Presentation\Common\Vocabulary\Motivation;
 
 /**
  * Plugin 'DLF: Pageview' for the 'dlf' extension.
@@ -340,7 +340,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                 
                 $canvas = $iiif->getContainedResourceById($canvasId);
                 
-                /* @var $canvas iiif\presentation\common\model\resources\CanvasInterface */
+                /* @var $canvas Ubl\Iiif\Presentation\Common\Model\Resources\CanvasInterface */
                 
                 if ($canvas!=null && !empty($canvas->getPossibleTextAnnotationContainers())) {
                     
@@ -352,7 +352,7 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                             
                             foreach ($annotationContainer->getResources() as $annotation) {
                                 
-                                /* @var $annotation \iiif\presentation\common\model\resources\AnnotationInterface */
+                                /* @var $annotation \Ubl\Iiif\Presentation\Common\Model\resources\AnnotationInterface */
                                 
                                 if (Motivation::isPaintingMotivation($annotation->getMotivation()) 
                                     && $annotation->getBody() != null 

@@ -12,8 +12,8 @@
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_ERROR;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_NOTICE;
 use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
-use iiif\presentation\common\model\resources\IiifResourceInterface;
-use iiif\tools\IiifHelper;
+use Ubl\Iiif\Presentation\Common\Model\Resources\IiifResourceInterface;
+use Ubl\Iiif\Tools\IiifHelper;
 
 /**
  * Document class 'tx_dlf_document' for the 'dlf' extension.
@@ -475,7 +475,7 @@ abstract class tx_dlf_document {
                         
                         if (!class_exists('\\iiif\\presentation\\IiifHelper', false)) {
                             
-                            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/include.php'));
+                            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/Iiif/include.php'));
                             
                         }
                         
