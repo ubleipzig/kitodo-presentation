@@ -80,7 +80,7 @@ class tx_dlf_metadata extends tx_dlf_plugin {
         
             if (!isset($this->conf['displayIiifRights'])) {
                 
-                $this->conf['originalIiifMetadata'] = 1;
+                $this->conf['displayIiifRights'] = 1;
                 
             }
             
@@ -92,7 +92,7 @@ class tx_dlf_metadata extends tx_dlf_plugin {
             
         }
         
-        $useOriginalIiifManifestMetadata = $this->conf['originalIiifMetadata'] > 0 && $this->doc instanceof tx_dlf_iiif_manifest;
+        $useOriginalIiifManifestMetadata = $this->conf['originalIiifMetadata'] == 1 && $this->doc instanceof tx_dlf_iiif_manifest;
 
         $metadata = array ();
 
