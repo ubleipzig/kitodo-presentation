@@ -16,7 +16,6 @@ use const TYPO3\CMS\Core\Utility\GeneralUtility\SYSLOG_SEVERITY_WARNING;
 use Ubl\Iiif\Presentation\Common\Model\Resources\AnnotationContainerInterface;
 use Ubl\Iiif\Presentation\Common\Model\Resources\AnnotationInterface;
 use Ubl\Iiif\Presentation\Common\Model\Resources\CanvasInterface;
-use Ubl\Iiif\Presentation\Common\Model\Resources\CollectionInterface;
 use Ubl\Iiif\Presentation\Common\Model\Resources\ContentResourceInterface;
 use Ubl\Iiif\Presentation\Common\Model\Resources\IiifResourceInterface;
 use Ubl\Iiif\Presentation\Common\Model\Resources\ManifestInterface;
