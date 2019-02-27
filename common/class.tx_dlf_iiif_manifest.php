@@ -29,6 +29,13 @@ use Ubl\Iiif\Services\AbstractImageService;
 use Ubl\Iiif\Services\Service;
 use Ubl\Iiif\Tools\IiifHelper;
 
+/**
+ * Document class 'tx_dlf_iiif_manifest' for the 'dlf' extension. This class
+ * represents a IIIF manifest in the conext of this TYPO3 extension.
+ * 
+ * @author Lutz Helm <helm@ub.uni-leipzig.de>
+ *
+ */
 class tx_dlf_iiif_manifest extends tx_dlf_document
 {
     /**
@@ -41,25 +48,37 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     protected $asJson = '';
 
     /**
-     * 
+     * A PHP object representation of a IIIF manifest.
      * @var ManifestInterface
      */
     protected $iiif;
-    
+
+    /**
+     * 'IIIF1', 'IIIF2' or 'IIIF3', depending on the API $this->iiif confrms to:
+     * IIIF Metadata API 1, IIIF Presentation API 2 or 3
+     * @var string
+     */
     protected $iiifVersion;
 
+    /**
+     * Document has already been analyzed if it contains fulltext for the Solr index
+     * @var boolean
+     */
     protected $hasFulltextSet = false;
     
-    protected $fulltext = null;
-    
     /**
-     * This holds the original manifest's parsed metadata array with their corresponding structMap//div's ID as array key
+     * This holds the original manifest's parsed metadata array with their corresponding
+     * resource (Manifest / Sequence / Range) ID as array key
      *
      * @var	array
      * @access protected
      */
     protected $originalMetadataArray = array ();
     
+    /**
+     * Holds the mime types of linked resources in the manifest (extreacted during parsing) for later use.
+     * @var array
+     */
     protected $mimeTypes = [];
     
     /**
@@ -79,6 +98,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
 
         if ($this->iiif !== null) {
             
+            // TODO check if there is a metadata configuration and a matching value first
+            
             $this->recordId = $this->iiif->getId();
             
         }
@@ -96,6 +117,13 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
     }
     
+    /**
+     * Returns a string representing the Metadata / Presentation API version which the IIIF resource
+     * conforms to. This is used for example to extract metadata according to configured patterns.
+     * 
+     * @return string   'IIIF1' if the resource is a Metadata API 1 resource, 'IIIF2' / 'IIIF3' if
+     *                  the resource is a Presentation API 2 / 3 resource
+     */
     public function getIiifVersion() {
         
         if (!isset($this->iiifVersion)) {
@@ -120,9 +148,29 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
     }
 
+    /**
+     * True if getUseGroups() has been called and $this-useGrps is loaded
+     * 
+     * @var boolean 
+     */
     protected $useGrpsLoaded;
+
+    /**
+     * Holds the configured useGrps as array.
+     * 
+     * @var array
+     */
     protected $useGrps;
-    
+
+    /**
+     * tx_dlf_iiif_manifest also populates the physical stucture array entries for matching
+     * 'fileGrp's. To do that, the configuration has to be loaded; afterwards configured
+     * 'fileGrp's for thumbnails, downloads, audio, fulltext and the 'fileGrp's for images
+     * can be requested with this method.  
+     * 
+     * @param string $use
+     * @return array|mixed
+     */
     protected function getUseGroups($use)
     {
         if (!$this->useGrpsLoaded) {
@@ -187,10 +235,10 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
                 $this->physicalStructureInfo[$physSeq[0]]['dmdId'] = $iiifId;
                 
-                // TODO translation?
+                // TODO Translation? Or use language "@none" / null? 
                 $this->physicalStructureInfo[$physSeq[0]]['label'] = $this->iiif->getLabelForDisplay();
                 
-                // TODO translation?
+                // TODO Translation? Or use language "@none" / null?
                 $this->physicalStructureInfo[$physSeq[0]]['orderlabel'] = $this->iiif->getLabelForDisplay();
                 
                 $this->physicalStructureInfo[$physSeq[0]]['type'] = 'physSequence';
@@ -229,7 +277,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     
                     if (!empty($iiifAlto)) {
                         
-                        // FIXME use all possible alto files?
+                        // FIXME use multiple possible alto files?
                         
                         $this->mimeTypes[$alto[0]] = "application/alto+xml";
                         
@@ -398,6 +446,11 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
 
     }
 
+    /**
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::getDownloadLocation()
+     */
     public function getDownloadLocation($id) {
         
         $fileLocation = $this->getFileLocation($id);
@@ -467,8 +520,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
         } elseif ($fileResource instanceof AnnotationInterface) {
             
-            // $format = $fileResource->getResource()->getFormat();
-            
             $format = "application/vnd.kitodo.iiif";
             
             
@@ -476,6 +527,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
             if ($fileResource->isText() || $fileResource->isImage() && ($fileResource->getSingleService() == null || !($fileResource->getSingleService() instanceof AbstractImageService))) {
                 
+                // Support static images without an image service
                 return $fileResource->getFormat();
                 
             }
@@ -483,8 +535,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             $format = "application/vnd.kitodo.iiif";
             
         } elseif ($fileResource instanceof AbstractImageService) {
-            
-            // $format = $fileResource->getFormat();
             
             $format = "application/vnd.kitodo.iiif";
             
@@ -636,22 +686,9 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
         }
         
-        if (isset($canvases) && sizeof($canvases)>0) {
-            
-            foreach ($canvases as $canvas) {
-                
-                foreach ($useGroups as $fileUse) {
-
-//                    $details['files'][$fileUse[]]  ;
-                    
-                }
-                
-            }
-            
-        }
-        
         // Keep for later usage.
         $this->logicalUnits[$details['id']] = $details;
+
         // Walk the structure recursively? And are there any children of the current element?
         if ($recursive) {
             
@@ -716,7 +753,18 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
     }
     
-    
+    /**
+     * Returns metadata for IIIF resources with the ID $id in there original form in
+     * the manifest, but prepared for display to the user.
+     * 
+     * @param string   $id: the ID of the IIIF resource
+     * @param number   $cPid: the configuration folder's id
+     * @param boolean  $withDescription: add description / summary to the return value
+     * @param boolean  $withRights: add attribution and license / rights and requiredStatement to the return value
+     * @param boolean  $withRelated: add related links / homepage to the return value
+     * 
+     * @return array
+     */
     public function getManifestMetadata($id, $cPid = 0, $withDescription = true, $withRights = true, $withRelated = true) {
         
         if (!empty($this->originalMetadataArray[$id])) {
@@ -904,39 +952,15 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             
         }
         
-        
-//         if ($this->iiif instanceof Manifest) {
-            
-//             // TODO for every metadatum: translation; multiple values; configuration 
-            
-//             $metadata['author'][] = $this->iiif->getMetadataForLabel('Author');
-            
-//             $metadata['place'][] = $this->iiif->getMetadataForLabel('Place of publication');
-            
-//             $metadata['place_sorting'][] = $this->iiif->getMetadataForLabel('Place of publication');
-           
-//             $metadata['year'][] = $this->iiif->getMetadataForLabel('Date of publication');
-            
-//             $metadata['year_sorting'][] = $this->iiif->getMetadataForLabel('Date of publication');
-            
-//             $metadata['prod_id'][] = $this->iiif->getMetadataForLabel('Kitodo');
-            
-//             $metadata['record_id'][] = $this->recordId;
-            
-//             $metadata['union_id'][] = $this->iiif->getMetadataForLabel('Source PPN (SWB)');
-            
-//             // $metadata['collection'][] = $this->iiif->getMetadataForLabel('Collection');
-            
-//             $metadata['owner'][] = $this->iiif->getMetadataForLabel('Owner');
-            
-//         }
-        
-        // TODO use configuration
-        
         return $metadata;
         
     }
-    
+
+    /**
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::_getSmLinks()
+     */
     protected function _getSmLinks() {
         
         if (!$this->smLinksLoaded && isset($this->iiif) && $this->iiif instanceof ManifestInterface) {
@@ -1009,13 +1033,23 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         }
 
     }
-        
+
+    /**
+     * Currently not supported for IIIF. Multivolume works _could_ be modelled
+     * as IIIF Collections, but we can't tell them apart from actual collections.
+     * 
+     * @see tx_dlf_document::saveParentDocumentIfExists()
+     */
     protected function saveParentDocumentIfExists()
     {
-        // Do nothing
-        // TODO Check if Collection doc needs to be saved
+        // Do nothing.
     }
 
+    /**
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::getRawText()
+     */
     public function getRawText($id) {
         
         $rawText = '';
@@ -1026,8 +1060,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             return $this->rawTextArray[$id];
             
         }
-        
-        // TODO remove presentation api 2 specifics 
         
         $this->ensureHasFulltextIsSet();
         
@@ -1106,6 +1138,16 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     }
     
     /**
+     * @return IiifResourceInterface
+     */
+    public function getIiif()
+    {
+        
+        return $this->iiif;
+        
+    }
+
+    /**
      * {@inheritDoc}
      * @see tx_dlf_document::init()
      */
@@ -1158,16 +1200,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         }
         
     }
-    public function __sleep() {
-        
-        // TODO implement serializiation in IIIF library
-        $jsonArray = $this->iiif->getOriginalJsonArray();
-
-        $this->asJson = json_encode($jsonArray);
-        
-        return array ('uid', 'pid', 'recordId', 'parentId', 'asJson');
-        
-    }
     
     protected function prepareMetadataArray($cPid)
     {
@@ -1177,7 +1209,31 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         $this->metadataArray[(string) $id] = $this->getMetadata((string) $id, $cPid);
         
     }
+
+    /**
+     *
+     * {@inheritDoc}
+     * @see tx_dlf_document::setPreloadedDocument()
+     */
+    protected function setPreloadedDocument($preloadedDocument) {
+        
+        if ($preloadedDocument instanceof ManifestInterface) {
+            
+            $this->iiif = $preloadedDocument;
+            
+            return true;
+            
+        }
+        
+        return false;
+        
+    }
     
+    /**
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::ensureHasFulltextIsSet()
+     */
     protected function ensureHasFulltextIsSet()
     {
         /*
@@ -1261,21 +1317,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         return $this->toplevelId;
         
     }
-     
-    protected function setPreloadedDocument($preloadedDocument) {
-        
-        if ($preloadedDocument instanceof ManifestInterface) {
-            
-            $this->iiif = $preloadedDocument;
-            
-            return true;
-            
-        }
-        
-        return false;
-        
-    }
-    
+
     /**
      * This magic method is executed after the object is deserialized
      * @see __sleep()
@@ -1294,37 +1336,42 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         IiifHelper::setMaxThumbnailWidth($conf['iiifThumbnailWidth']);
         
-        $this->asJson='';
+        $resouce = IiifHelper::loadIiifResource($this->asJson);
         
-        if ($resource != null) {
-            
-            if ($resource instanceof ManifestInterface || $resource instanceof CollectionInterface) {
+        if ($resource != null && $resource instanceof ManifestInterface) {
                 
-                $this->iiif = $resource;
+            $this->asJson='';
+
+            $this->iiif = $resource;
+
+            $this->init();
+
+        } else {
+
+            if (TYPO3_DLOG) {
                 
-                return true;
-            
+                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_iiif_manifest->__wakeup()] Could not load IIIF after deserialization', self::$extKey, SYSLOG_SEVERITY_ERROR);
+                
             }
-                
+
         }
             
-        if (TYPO3_DLOG) {
-            
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_iiif_manifest->__wakeup()] Could not load IIIF after deserialization', self::$extKey, SYSLOG_SEVERITY_ERROR);
-            
-        }
-    
     }
 
     /**
-     * @return IiifResourceInterface
+     * 
+     * @return string[]
      */
-    public function getIiif()
-    {
-    
-        return $this->iiif;
-
+    public function __sleep() {
+        
+        // TODO implement serializiation in IIIF library
+        $jsonArray = $this->iiif->getOriginalJsonArray();
+        
+        $this->asJson = json_encode($jsonArray);
+        
+        return array ('uid', 'pid', 'recordId', 'parentId', 'asJson');
+        
     }
-
+    
 }
 

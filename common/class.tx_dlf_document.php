@@ -33,8 +33,6 @@ abstract class tx_dlf_document {
      * @access protected
      */
     protected $cPid = 0;
-    
-    public static $remoteContentCache = array();
 
     /**
      * The extension key
@@ -68,7 +66,9 @@ abstract class tx_dlf_document {
     );
     
     /**
-     * Are there any fulltext files available?
+     * Are there any fulltext files available? This also includes IIIF text annotations
+     * with motivation 'painting' if Kitodo.Presentation is configured to store text
+     * annotations as fulltext.
      *
      * @var boolean
      * @access protected
@@ -100,7 +100,8 @@ abstract class tx_dlf_document {
     protected $logicalUnits = array ();
 
     /**
-     * This holds the documents' parsed metadata array with their corresponding structMap//div's ID as array key
+     * This holds the documents' parsed metadata array with their corresponding
+     * structMap//div's ID (METS) or Range / Manifest / Sequence ID (IIIF) as array key
      *
      * @var	array
      * @access protected
@@ -158,7 +159,8 @@ abstract class tx_dlf_document {
     protected $physicalStructureLoaded = FALSE;
     
     /**
-     * This holds the smLinks between logical and physical structMap
+     * This holds the smLinks between logical and physical structMap.
+     * For IIIF, this is modeled by a link between Canvases and Ranges / Manifests.
      *
      * @var	array
      * @access protected
@@ -183,7 +185,8 @@ abstract class tx_dlf_document {
     protected $pid = 0;
 
     /**
-     * This holds the documents' raw text pages with their corresponding structMap//div's ID as array key
+     * This holds the documents' raw text pages with their corresponding
+     * structMap//div's ID (METS) or Range / Manifest / Sequence ID (IIIF) as array key
      *
      * @var	array
      * @access protected
@@ -266,7 +269,8 @@ abstract class tx_dlf_document {
     protected $thumbnailLoaded = FALSE;
 
     /**
-     * This holds the toplevel structure's @ID
+     * This holds the toplevel structure's @ID (METS) or the manifests
+     * ID (IIIF).
      *
      * @var	string
      * @access protected
@@ -295,16 +299,25 @@ abstract class tx_dlf_document {
 
     }
 
+    /**
+     * This ensures that the recordId, if existent, is retrieved from the document. 
+     */
     protected abstract function establishRecordId();
 
     /**
-     * @return SimpleXMLElement|IiifResourceInterface
+     * @return SimpleXMLElement|IiifResourceInterface An PHP object representation of
+     * the current document. SimpleXMLElement for METS, IiifResourceInterface for IIIF
      */
     protected abstract function getDocument();
     
     /**
-     * This gets the location of a downloadable file. 
-     * @param string $id
+     * This gets the location of a downloadable file for a physical page or track
+     * 
+     * @access	public
+     *
+     * @param string $id The @ID attribute for a file node (METS) or the ID of the IIIF resource 
+     *  
+     * @return string    The file's location as URL
      */
     public abstract function getDownloadLocation($id);
     
@@ -313,7 +326,7 @@ abstract class tx_dlf_document {
      *
      * @access	public
      *
-     * @param	string		$id: The @ID attribute of the file node
+     * @param	string		$id: The @ID attribute of the file node (METS) or the ID of the IIIF resource
      *
      * @return	string		The file's location as URL
      */
@@ -324,7 +337,7 @@ abstract class tx_dlf_document {
      *
      * @access	public
      *
-     * @param	string		$id: The @ID attribute of the file node
+     * @param	string		$id: The @ID attribute of the file node (METS) or the ID of the IIIF resource
      *
      * @return	string		The file's MIME type
      */
@@ -335,11 +348,12 @@ abstract class tx_dlf_document {
      *
      * @access	public
      *
-     * @param	mixed		$uid: The unique identifier of the document to parse or URL of XML file
+     * @param	mixed		$uid: The unique identifier of the document to parse, the URL of XML file
+     *                      or the IRI of the IIIF resource
      * @param	integer		$pid: If > 0, then only document with this PID gets loaded
      * @param	boolean		$forceReload: Force reloading the document instead of returning the cached instance
      *
-     * @return	&tx_dlf_document		Instance of this class
+     * @return	&tx_dlf_document		Instance of this class, either tx_dlf_mets_document or tx_dlf_iiif_manifest
      */
     public static function &getInstance($uid, $pid = 0, $forceReload = FALSE) {
 
@@ -449,7 +463,7 @@ abstract class tx_dlf_document {
                 // Disables the functionality to allow external entities to be loaded when parsing the XML, must be kept
                 $previousValueOfEntityLoader = libxml_disable_entity_loader(TRUE);
                 
-                // Load XML from file.
+                // Try to load XML from file.
                 $xml = simplexml_load_string($content);
                 
                 // reset entity loader setting
@@ -469,6 +483,7 @@ abstract class tx_dlf_document {
                     
                 } else {
                     
+                    // Try to load file as IIIF resource instead.
                     $contentAsJsonArray = json_decode($content, true);
                     
                     if ($contentAsJsonArray !== null) {
@@ -517,7 +532,7 @@ abstract class tx_dlf_document {
             
         }
 
-        // ...and save instance to registry.
+        // Save instance to registry.
         if ($instance->ready) {
 
             self::$registry[md5($instance->uid)] = $instance;
@@ -550,8 +565,9 @@ abstract class tx_dlf_document {
      *
      * @access	public
      *
-     * @param	string		$id: The @ID attribute of the logical structure node
-     * @param	boolean		$recursive: Whether to include the child elements
+     * @param	string		$id: The @ID attribute of the logical structure node (METS) or the ID
+     *                      of the Manifest / Range (IIIF)
+     * @param	boolean		$recursive: Whether to include the child elements / resources
      *
      * @return	array		Array of the element's id, label, type and physical page indexes/mptr link
      */
@@ -562,11 +578,12 @@ abstract class tx_dlf_document {
      *
      * @access	public
      *
-     * @param	string		$id: The @ID attribute of the logical structure node
+     * @param	string		$id: The @ID attribute of the logical structure node (METS) or the ID
+     *                      of the Manifest / Range (IIIF)
      * @param	integer		$cPid: The PID for the metadata definitions
      * 						(defaults to $this->cPid or $this->pid)
      *
-     * @return	array		The logical structure node's parsed metadata array
+     * @return	array		The logical structure node's / the IIIF resource's parsed metadata array
      */
     public abstract function getMetadata($id, $cPid = 0);
 
@@ -611,16 +628,26 @@ abstract class tx_dlf_document {
     }
 
     /**
-     * This extracts the raw text for a physical structure node
+     * This extracts the raw text for a physical structure node / IIIF Manifest / Canvas
      *
      * @access	public
      *
-     * @param	string		$id: The @ID attribute of the physical structure node
+     * @param	string		$id: The @ID attribute of the physical structure node (METS) or the ID
+     *                      of the Manifest / Range (IIIF)
      *
-     * @return	string		The physical structure node's raw text
+     * @return	string		The physical structure node's / IIIF resource's raw text
      */
     public abstract function getRawText($id);
     
+    /**
+     * This extracts the raw text for a physical structure node / IIIF Manifest / Canvas from an
+     * XML fulltext representation (ALTO). 
+     *
+     * @param	string		$id: The @ID attribute of the physical structure node (METS) or the ID
+     *                      of the Manifest / Range (IIIF)
+     *
+     * @return	string		The physical structure node's / IIIF resource's raw text from XML
+     */
     protected function getRawTextFromXml($id) {
         
         $rawText = '';
@@ -777,19 +804,19 @@ abstract class tx_dlf_document {
     }
 
     /**
-     * This extracts all the metadata for the toplevel logical structure node
+     * This extracts all the metadata for the toplevel logical structure node / resource
      *
      * @access	public
      *
      * @param	integer		$cPid: The PID for the metadata definitions
      *
-     * @return	array		The logical structure node's parsed metadata array
+     * @return	array		The logical structure node's / resource's parsed metadata array
      */
     public function getTitledata($cPid = 0) {
 
         $titledata = $this->getMetadata($this->_getToplevelId(), $cPid);
 
-        // Set record identifier for METS file if not present.
+        // Set record identifier for METS file / IIIF manifest if not present.
         if (is_array($titledata) && array_key_exists('record_id', $titledata)) {
 
             if (!empty($this->recordId) && !in_array($this->recordId, $titledata['record_id'])) {
@@ -846,16 +873,23 @@ abstract class tx_dlf_document {
     protected abstract function init();
 
     /**
-     * Reuse any document that might have been already loaded to determine wether is METS or IIIF
+     * Reuse any document object that might have been already loaded to determine wether is METS or IIIF
      * 
-     * @param SimpleXMLElement|IiifResourceInterface $preloadedDocument: 
+     * @param SimpleXMLElement|IiifResourceInterface $preloadedDocument: any instance that has already been loaded
+     * 
+     * @return boolean                               true if $preloadedDocument can actually be reused, false if it has to be loaded again
      */
     protected abstract function setPreloadedDocument($preloadedDocument);
     
+    /**
+     * METS/IIIF specific part of loading a location
+     * 
+     * @param string   $location:  The URL of the file to load
+     */
     protected abstract function loadLocation($location);
     
     /**
-     * Load XML file from URL
+     * Load XML file / IIIF resource from URL
      *
      * @access	protected
      *
@@ -865,18 +899,20 @@ abstract class tx_dlf_document {
      */
     protected function load($location) {
 
-        // Load XML file.
+        // Load XML/JSON-LD file.
         if (\TYPO3\CMS\Core\Utility\GeneralUtility::isValidUrl($location)) {
 
             // Load extension configuration
             $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['dlf']);
 
-            // Set user-agent to identify self when fetching XML data.
+            // Set user-agent to identify self when fetching XML/JSON-LD data.
             if (!empty($extConf['useragent'])) {
 
                 @ini_set('user_agent', $extConf['useragent']);
 
             }
+            
+            // the actual loading is format specific
             return $this->loadLocation($location);
             
         } else {
@@ -1419,8 +1455,17 @@ abstract class tx_dlf_document {
 
     }
     
+    /**
+     * Also save a parent document to the database and the Solr index if the current
+     * document has one. Currently only applies to METS documents.
+     */
     protected abstract function saveParentDocumentIfExists();
 
+    /**
+     * Analyze the document if it contains any fulltext that needs to be indexed.
+     */
+    protected abstract function ensureHasFulltextIsSet();
+    
     /**
      * This returns $this->cPid via __get()
      *
@@ -1434,8 +1479,6 @@ abstract class tx_dlf_document {
 
     }
 
-    protected abstract function ensureHasFulltextIsSet();
-    
     /**
      * This returns $this->hasFulltext via __get()
      *
@@ -1538,7 +1581,8 @@ abstract class tx_dlf_document {
      *
      * @access	protected
      *
-     * @return	array		Array of physical elements' id, type, label and file representations ordered by @ORDER attribute
+     * @return	array		Array of physical elements' id, type, label and file representations ordered
+     * by @ORDER attribute / IIIF Sequence Canvases
      */
     protected abstract function _getPhysicalStructure();
 
@@ -1547,7 +1591,7 @@ abstract class tx_dlf_document {
      *
      * @access	protected
      *
-     * @return	array		Array of elements' type, label and file representations ordered by @ID attribute
+     * @return	array		Array of elements' type, label and file representations ordered by @ID attribute / Canvas order
      */
     protected function _getPhysicalStructureInfo() {
 
@@ -1630,11 +1674,21 @@ abstract class tx_dlf_document {
     }
 
     /**
+     * This returns the smLinks between logical and physical structMap (METS) and models the
+     * relation between IIIF Canvases and Manifests / Ranges in the same way 
+     *
+     * @access	protected
+     *
+     * @return	array		The links between logical and physical nodes / Range, Manifest and Canvas 
+     */
+    protected abstract function _getSmLinks();
+
+    /**
      * This builds an array of the document's logical structure
      *
      * @access	protected
      *
-     * @return	array		Array of structure nodes' id, label, type and physical page indexes/mptr link with original hierarchy preserved
+     * @return	array		Array of structure nodes' id, label, type and physical page indexes/mptr / Canvas link with original hierarchy preserved
      */
     protected function _getTableOfContents() {
 
@@ -1685,7 +1739,6 @@ abstract class tx_dlf_document {
             // Load extension configuration.
             $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
 
-            // TODO METS-specific? delegate if necessary
             if (empty($extConf['fileGrpThumbs'])) {
 
                 if (TYPO3_DLOG) {
@@ -1723,6 +1776,7 @@ abstract class tx_dlf_document {
 
                     $strctType = tx_dlf_helper::getIndexName($resArray['thumbnail'], 'tx_dlf_structures', $cPid);
 
+                    // TODO METS specific. Move somewhere else.
                     // Check if this document has a structure element of the desired type.
                     $strctIds = $this->mets->xpath('./mets:structMap[@TYPE="LOGICAL"]//mets:div[@TYPE="'.$strctType.'"]/@ID');
 
@@ -1753,7 +1807,7 @@ abstract class tx_dlf_document {
                 \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('[tx_dlf_document->_getThumbnail()] No structure of type "'.$metadata['type'][0].'" found in database', self::$extKey, SYSLOG_SEVERITY_ERROR);
 
             }
-            // TODO delegate the above
+            // TODO delegate the above to METS implementation?
             
             $this->thumbnailLoaded = TRUE;
 
@@ -1818,6 +1872,8 @@ abstract class tx_dlf_document {
      *
      * @param	integer		$uid: The UID of the document to parse or URL to XML file
      * @param	integer		$pid: If > 0, then only document with this PID gets loaded
+     * @param   object      $preloadedDocument: Either null or the SimpleXMLElement or IiifResourceInterface that has
+     *                      been loaded to determine the basic document format.
      *
      * @return	void
      */

@@ -48,6 +48,11 @@ class tx_dlf_pageview extends tx_dlf_plugin {
      */
     protected $fulltexts = array ();
     
+    /**
+     * Holds the current AnnotationLists / AnnotationPages
+     * 
+     * @var array
+     */
     protected $annotationContainers = array();
 
     /**
@@ -328,6 +333,14 @@ class tx_dlf_pageview extends tx_dlf_plugin {
 
     }
     
+
+    /**
+     * Get all AnnotationPages / AnnotationLists that contain text Annotations with "painting" motivation
+     * 
+     * @param integer    $page: the current page's number
+     * @return array     An array containing the IRIs of the AnnotationLists / AnnotationPages as well as
+     *                   some information about the canvas. 
+     */
     public function getAnnotationContainers($page)
     {
         if ($this->doc instanceof tx_dlf_iiif_manifest) {

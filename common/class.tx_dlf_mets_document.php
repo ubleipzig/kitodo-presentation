@@ -466,7 +466,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
         }
 
-        // TODO initialize metadata in abstract class
+        // TODO initialize metadata in abstract class?
         // Initialize metadata array with empty values.
         $metadata = array (
             'title' => array (),
@@ -658,6 +658,11 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
     }
 
+    /**
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::getRawText()
+     */
     public function getRawText($id) {
         
         $rawText = '';
@@ -724,6 +729,11 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
     }
 
+    /**
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::loadLocation()
+     */
     protected function loadLocation($location)
     {
         // Turn off libxml's error logging.
@@ -801,6 +811,11 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
     }
 
+    /**
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::saveParentDocumentIfExists()
+     */
     protected function saveParentDocumentIfExists()
     {
         // Get the closest ancestor of the current document which has a MPTR child.
@@ -831,6 +846,11 @@ final class tx_dlf_mets_document extends tx_dlf_document {
         }
     }
     
+    /**
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::setPreloadedDocument()
+     */
     protected function setPreloadedDocument($preloadedDocument) {
         
         if ($preloadedDocument instanceof SimpleXMLElement) {
@@ -992,6 +1012,11 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
     }
 
+    /**
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::ensureHasFulltextIsSet()
+     */
     protected function ensureHasFulltextIsSet()
     {
         // Are the fileGrps already loaded?
@@ -1016,6 +1041,11 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
     }
 
+    /**
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::prepareMetadataArray()
+     */
     protected function prepareMetadataArray($cPid)
     {
         // Get all logical structure nodes with metadata.
@@ -1260,11 +1290,9 @@ final class tx_dlf_mets_document extends tx_dlf_document {
     }
 
     /**
-     * This returns the smLinks between logical and physical structMap
-     *
-     * @access	protected
-     *
-     * @return	array		The links between logical and physical nodes
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::_getSmLinks()
      */
     protected function _getSmLinks() {
 
@@ -1482,6 +1510,11 @@ final class tx_dlf_mets_document extends tx_dlf_document {
      */
     protected function __clone() {}
 
+    /**
+     * 
+     * {@inheritDoc}
+     * @see tx_dlf_document::getDocument()
+     */
     protected function getDocument() {
 
         return $this->mets;

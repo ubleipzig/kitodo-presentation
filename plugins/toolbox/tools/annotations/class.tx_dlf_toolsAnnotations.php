@@ -11,6 +11,7 @@
 
 /**
  * Tool 'Annotation selection' for the plugin 'DLF: Toolbox' of the 'dlf' extension.
+ * Allows the display of IIIF annotations.
  *
  * @author	Sebastian Meyer <sebastian.meyer@slub-dresden.de>
  * @author	Alexander Bigga <alexander.bigga@slub-dresden.de>
@@ -91,7 +92,7 @@ class tx_dlf_toolsAnnotations extends tx_dlf_plugin {
             $markerArray['###ANNOTATION_SELECT###'] = '<a class="select switchoff" id="tx-dlf-tools-annotations" title="" data-dic="annotations-on:'
                 .$this->pi_getLL('annotations-on', '', TRUE).';annotations-off:'
                     .$this->pi_getLL('annotations-off', '', TRUE).'">&nbsp;</a>';
-            // TODO selector for different 
+            // TODO selector for different motivations
             
         } else {
             $markerArray['###ANNOTATION_SELECT###'] = '<span class="no-annotations">'.$this->pi_getLL('annotations-not-available', '', TRUE).'</span>';
