@@ -359,24 +359,30 @@ class tx_dlf_pageview extends tx_dlf_plugin {
                     
                     $annotationContainers = array();
                     
+                    /*
+                     *  TODO Analyzing the annotations on the server side requires loading the annotation lists / pages
+                     *  just to determine wether they contain text annotations for painting. This will take time and lead to a bad user experience.
+                     *  It would be better to link every annotation and analyze the data on the client side.
+                     *  
+                     *  On the other hand, server connections are potentially better than client connections. Downloading annotation lists   
+                     */
                     foreach ($canvas->getPossibleTextAnnotationContainers() as $annotationContainer) {
                         
-                        if ($annotationContainer->getTextAnnotations() != null) {
+                        if (($textAnnotations = $annotationContainer->getTextAnnotations(Motivation::PAINTING)) != null) {
                             
-                            foreach ($annotationContainer->getResources() as $annotation) {
+                            foreach ($textAnnotations as $annotation) {
                                 
-                                /* @var $annotation \Ubl\Iiif\Presentation\Common\Model\resources\AnnotationInterface */
-                                
-                                if (Motivation::isPaintingMotivation($annotation->getMotivation()) 
-                                    && $annotation->getBody() != null 
-                                    && $annotation->getBody()->getFormat() == "text/plain"
+                                if ($annotation->getBody()->getFormat() == "text/plain"
                                     && $annotation->getBody()->getChars() != null) {
+                                        
                                         $annotationListData = [];
+
                                         $annotationListData["uri"] = $annotationContainer->getId();
+
                                         $annotationListData["label"] = $annotationContainer->getLabelForDisplay();
-                                        
+
                                         $annotationContainers[] = $annotationListData;
-                                        
+
                                         break;
                                     
                                 }

@@ -329,7 +329,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                     
                 }
                 
-                
                 if (!empty($this->iiif->getDefaultCanvases())) {
                     
                     // canvases have not order property, but the context defines canveses as @list with a specific order, so we can provide an alternative
@@ -366,8 +365,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             }
                         }
                         
-                        $this->ensureHasFulltextIsSet();
-
                         // populate structural metadata info
                         $elements[$canvasOrder] = $canvas->getId();
                         
@@ -401,6 +398,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                                     
                                     $this->hasFulltext = true;
                                     
+                                    $this->hasFulltextSet = true;
+                                
                                 }
                                 
                             }
@@ -883,6 +882,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      */
     public function getMetadata($id, $cPid = 0)
     {
+
         if (!empty($this->metadataArray[$id]) && $this->metadataArray[0] == $cPid) {
             
             return $this->metadataArray[$id];
@@ -1119,6 +1119,8 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                 
                 if ($extConf['indexAnnotations'] == 1) {
                     
+                    $iiifResource = $this->iiif->getContainedResourceById($id);
+
                     // Get annotation containers
                     $annotationContainerIds = $this->physicalStructureInfo[$id]['annotationContainers'];
                     
@@ -1131,17 +1133,13 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
                             $annotationContainer = $this->iiif->getContainedResourceById($annotationListId);
                             
                             /* @var $annotationContainer \Ubl\Iiif\Presentation\Common\Model\Resources\AnnotationContainerInterface */
-                            foreach ($annotationContainer->getTextAnnotations() as $annotation) {
+                            foreach ($annotationContainer->getTextAnnotations(Motivation::PAINTING) as $annotation) {
                                 
-                                if (Motivation::isPaintingMotivation($annotation->getMotivation()) && $annotation->getResource()!=null && $annotation->getResource()->getChars()!=null) {
+                                if ($annotation->getTargetResourceId() == $iiifResource->getId() && 
+                                    $annotation->getBody()!=null && $annotation->getBody()->getChars()!=null) {
                                     
-                                    $xywhFragment = $annotation->getOn();
-                                    
-                                    if ($id == null || $id == '' || ($xywhFragment != null && $xywhFragment->getTargetUri() == $id)) {
                                         
-                                        $annotationTexts[] = $annotation->getBody()->getChars();
-                                        
-                                    }
+                                    $annotationTexts[] = $annotation->getBody()->getChars();
                                     
                                 }
                                 
@@ -1275,12 +1273,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
     protected function ensureHasFulltextIsSet()
     {
         /*
-         *  TODO Check "seeAlso" of manifest and canvas for ALTO documents.
-         *  See https://github.com/altoxml/schema/issues/40 and https://github.com/altoxml/board/wiki/The-'application-alto-xml'-Media-Type
-         *  seeAlso.format = "application/alto+xml" (which is not a registered mime type) or seeAlso.profile = "http://www.loc.gov/standards/alto/v?"
-         */ 
-        
-        /*
          *  TODO Check annotations and annotation lists of canvas for ALTO documents.
          *  Example:
          *  https://digi.ub.uni-heidelberg.de/diglit/iiif/hirsch_hamburg1933_04_25/manifest.json links
@@ -1289,32 +1281,38 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         if (true) return;
         
-        // FIXME annotations for painting do not necessarily contain fulltext.
         if (!$this->hasFulltextSet && $this->iiif instanceof ManifestInterface) {
             
             $manifest = $this->iiif;
             
-            /* @var $manifest \Ubl\Iiif\Presentation\V2\Model\Resources\Manifest */
-            
-            $canvases = $manifest->getSequences()[0]->getCanvases();
+            $canvases = $manifest->getDefaultCanvases();
             
             foreach ($canvases as $canvas) {
                 
-                //TODO remove presentation api 2 specifics
-                if ($canvas->getOtherContent() != null) {
-                    
-                    foreach ($canvas->getOtherContent() as $annotationList) {
+                if (!empty($canvas->getSeeAlsoUrlsForFormat("application/alto+xml")) ||
+                    !empty($canvas->getSeeAlsoUrlsForProfile("http://www.loc.gov/standards/alto/"))) {
+
+                        $this->hasFulltextSet = true;
                         
-                        if ($annotationList->getResources() != null) {
+                        $this->hasFulltext = true;
+                        
+                        return;
+
+                }
+                
+                $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
+                
+                if ($extConf['indexAnnotations'] == 1 && !empty($canvas->getPossibleTextAnnotationContainers())) {
+                    
+                    foreach ($canvas->getPossibleTextAnnotationContainers() as $annotationContainer) {
+                        
+                        if (($textAnnotations = $annotationContainer->getTextAnnotations(Motivation::PAINTING)) != null) {
                             
-                            foreach ($annotationList->getResources() as $annotation) {
+                            foreach ($textAnnotations as $annotation) {
                                 
-                                /* @var  $annotation \Ubl\Iiif\Presentation\V2\Model\Resources\Annotation */
-                                // Assume that a plain text annotation which is meant to be displayed to the user represents the full text
-                                if (Motivation::isPaintingMotivation($annotation->getMotivation()) && 
-                                    $annotation->getResource() != null &&
-                                    $annotation->getResource()->getFormat() == "text/plain" && 
-                                    $annotation->getResource()->getChars() != null) {
+                                if ($annotation->getBody() != null &&
+                                    $annotation->getBody()->getFormat() == "text/plain" && 
+                                    $annotation->getBody()->getChars() != null) {
                                     
                                     $this->hasFulltextSet = true;
                                     
