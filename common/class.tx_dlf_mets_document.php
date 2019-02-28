@@ -1525,7 +1525,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
      * {@inheritDoc}
      * @see tx_dlf_document::establishRecordId()
      */
-    protected function establishRecordId()
+    protected function establishRecordId($pid)
     {
 
         // Check for METS object @ID.

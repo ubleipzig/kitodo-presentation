@@ -92,14 +92,53 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
      * {@inheritDoc}
      * @see tx_dlf_document::establishRecordId()
      */
-    protected function establishRecordId()
+    protected function establishRecordId($pid)
     {
 
         if ($this->iiif !== null) {
             
-            // TODO check if there is a metadata configuration and a matching value first
+            /*
+             *  FIXME This will not consistently work because we can not be sure to have the pid at hand. It may miss
+             *  if the plugin that actually loads the manifest allows content from other pages.
+             *  Up until now the cPid is only set after the document has been initialized. We need it before to
+             *  check the configuration.
+             *  TODO Saving / indexing should still work - check!
+             */
+            $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
+                'tx_dlf_metadataformat.xpath AS querypath',
+                'tx_dlf_metadata,tx_dlf_metadataformat,tx_dlf_formats',
+                'tx_dlf_metadata.pid='.$pid.' AND tx_dlf_metadataformat.pid='.$pid.' AND ((tx_dlf_metadata.uid=tx_dlf_metadataformat.parent_id AND tx_dlf_metadataformat.encoded=tx_dlf_formats.uid'
+                .' AND tx_dlf_metadata.index_name="record_id" AND tx_dlf_formats.type='.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->getIiifVersion(), 'tx_dlf_formats').') OR tx_dlf_metadata.format=0)'
+                .tx_dlf_helper::whereClause('tx_dlf_metadata', TRUE).tx_dlf_helper::whereClause('tx_dlf_metadataformat').tx_dlf_helper::whereClause('tx_dlf_formats'),
+                '',
+                '',
+                ''
+                );
             
-            $this->recordId = $this->iiif->getId();
+            if ($GLOBALS['TYPO3_DB']->sql_num_rows($result) > 0) {
+                
+                for ($i = 0, $j = $GLOBALS['TYPO3_DB']->sql_num_rows($result); $i < $j; $i++) {
+                    
+                    $resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result);
+                    
+                    $recordIdPath = $resArray['querypath'];
+
+                    if (!empty($recordIdPath)) {
+                        
+                        $this->recordId = $this->iiif->jsonPath($recordIdPath);
+                        
+                    }
+                    
+                }
+                
+            }
+            
+            // For now, it's a hardcoded ID, not only as a fallback
+            if (!isset($this->recordId)) {
+                
+                $this->recordId = $this->iiif->getId();
+                
+            }
             
         }
     

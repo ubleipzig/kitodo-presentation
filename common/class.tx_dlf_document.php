@@ -301,8 +301,9 @@ abstract class tx_dlf_document {
 
     /**
      * This ensures that the recordId, if existent, is retrieved from the document. 
+     * @param integer     $pid: ID of the configuration page with the recordId config 
      */
-    protected abstract function establishRecordId();
+    protected abstract function establishRecordId($pid);
 
     /**
      * @return SimpleXMLElement|IiifResourceInterface An PHP object representation of
@@ -1897,7 +1898,7 @@ abstract class tx_dlf_document {
                     // Cast to string for safety reasons.
                     $location = (string) $uid;
 
-                    $this->establishRecordId();
+                    $this->establishRecordId($pid);
 
                 } else {
 
