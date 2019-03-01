@@ -151,10 +151,12 @@ class ext_update {
      */
     protected function oldIndexRelatedTableNames() {
 
+        $database = $GLOBALS['TYPO3_CONF_VARS']['DB']['database'];
+        
         $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
             'column_name',
             'INFORMATION_SCHEMA.COLUMNS',
-            'TABLE_NAME = "tx_dlf_metadata"',
+            'TABLE_NAME = "tx_dlf_metadata" AND TABLE_SCHEMA = "'.$database.'"',
             '',
             '',
             ''
@@ -303,10 +305,12 @@ class ext_update {
     
     protected function hasNoFormatForDocument() {
         
+        $database = $GLOBALS['TYPO3_CONF_VARS']['DB']['database'];
+        
         $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
             'column_name',
             'INFORMATION_SCHEMA.COLUMNS',
-            'TABLE_NAME = "tx_dlf_documents" AND column_name = "document_format"',
+            'TABLE_NAME = "tx_dlf_documents" AND TABLE_SCHEMA="'.$database.'" AND column_name = "document_format"',
             '',
             '',
             ''
@@ -420,10 +424,12 @@ class ext_update {
     
     protected function hasOldXpathColumnNames() {
         
+        $database = $GLOBALS['TYPO3_CONF_VARS']['DB']['database'];
+
         $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
             'column_name',
             'INFORMATION_SCHEMA.COLUMNS',
-            'TABLE_NAME = "tx_dlf_metadataformat" AND column_name LIKE "xpath%"',
+            'TABLE_NAME = "tx_dlf_metadataformat" AND TABLE_SCHEMA = "'.$database.'" AND column_name LIKE "xpath%"',
             '',
             '',
             ''
@@ -439,6 +445,8 @@ class ext_update {
             }
                 
         }
+        
+        return FALSE;
     
     }
 
