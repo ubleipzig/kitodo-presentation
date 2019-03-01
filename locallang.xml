@@ -88,8 +88,8 @@
 			<label index="tx_dlf_metadata.tab3">Access</label>
 			<label index="tx_dlf_metadataformat">Metadata Format</label>
 			<label index="tx_dlf_metadataformat.encoded">Encoding</label>
-			<label index="tx_dlf_metadataformat.xpath">XPath (relative to //dmdSec/mdWrap/xmlData/root and with namespace) or JSONPath (relative to resource JSON object)</label>
-			<label index="tx_dlf_metadataformat.xpath_sorting">XPath / JSONPath for sorting (optional)</label>
+			<label index="tx_dlf_metadataformat.metadataquery">XPath (relative to //dmdSec/mdWrap/xmlData/root and with namespace) or JSONPath (relative to resource JSON object)</label>
+			<label index="tx_dlf_metadataformat.metadataquery_sorting">XPath / JSONPath for sorting (optional)</label>
 			<label index="tx_dlf_metadataformat.mandatory">Mandatory field?</label>
 			<label index="tx_dlf_metadataformat.tab1">General</label>
 			<label index="tx_dlf_formats">Data Formats</label>
@@ -234,6 +234,12 @@
 			<label index="update.documentSetFormatForOldEntries">Set document format for existing entries to 'METS'...</label>
 			<label index="update.documentSetFormatForOldEntriesOkay">...successfully completed!</label>
 			<label index="update.documentSetFormatForOldEntriesNotOkay">...incomplete! Please set missing tx_dlf_document.document_format values to 'METS'.</label>
+			<label index="update.renameXpathToMetdataQuery">Rename tx_dlf_metadataformat.xpath to tx_dlf_metadataformat.metadataquery ...</label>
+			<label index="update.renameXpathToMetdataQueryOkay">...successfully completed!</label>
+			<label index="update.renameXpathToMetdataQueryNotOkay">...failed! Please rename tx_dlf_metadataformat.xpath to tx_dlf_metadataformat.metadataquery in your database manually.</label>
+			<label index="update.renameXpathSortingToMetdataQuerySorting">Rename tx_dlf_metadataformat.xpath_sorting to tx_dlf_metadataformat.metadataquery_sorting ...</label>
+			<label index="update.renameXpathSortingToMetdataQuerySortingOkay">...successfully completed!</label>
+			<label index="update.renameXpathSortingToMetdataQuerySortingNotOkay">...failed! Please rename tx_dlf_metadataformat.xpath_sorting to tx_dlf_metadataformat.metadataquery_sorting in your database manually.</label>
 
 		</languageKey>
 		<languageKey index="de" type="array">
@@ -310,8 +316,8 @@
 			<label index="tx_dlf_metadata.tab3">Zugriff</label>
 			<label index="tx_dlf_metadataformat">Metadatenformat</label>
 			<label index="tx_dlf_metadataformat.encoded">Datenformat</label>
-			<label index="tx_dlf_metadataformat.xpath">XPath (relativ zu //dmdSec/mdWrap/xmlData/root und mit Namensraum) oder JSONPath (relativ zum Ressourcen-JSON-Objekt)</label>
-			<label index="tx_dlf_metadataformat.xpath_sorting">XPath / JSONPath für Sortierfeld (optional)</label>
+			<label index="tx_dlf_metadataformat.metadataquery">XPath (relativ zu //dmdSec/mdWrap/xmlData/root und mit Namensraum) oder JSONPath (relativ zum Ressourcen-JSON-Objekt)</label>
+			<label index="tx_dlf_metadataformat.metadataquery_sorting">XPath / JSONPath für Sortierfeld (optional)</label>
 			<label index="tx_dlf_metadataformat.mandatory">Pflichtfeld?</label>
 			<label index="tx_dlf_metadataformat.tab1">Allgemein</label>
 			<label index="tx_dlf_formats">Datenformate</label>
@@ -456,6 +462,12 @@
 			<label index="update.documentSetFormatForOldEntries">Setze das Format für bestehende Dokumente auf 'METS'...</label>
 			<label index="update.documentSetFormatForOldEntriesOkay">...erfolgreich beendet!</label>
 			<label index="update.documentSetFormatForOldEntriesNotOkay">...abgebrochen! Bitte in der Tabelle tx_dlf_document.document_format 'METS'.</label>
+			<label index="update.renameXpathToMetdataQuery">Benenne Datenbankspalte tx_dlf_metadataformat.xpath in tx_dlf_metadataformat.metadataquery um ...</label>
+			<label index="update.renameXpathToMetdataQueryOkay">...erfolgreich beendet - Spalte wurde umbenannt!</label>
+			<label index="update.renameXpathToMetdataQueryNotOkay">...fehlgeschlagen! Bitte in der Datenbank tx_dlf_metadataformat.xpath in tx_dlf_metadataformat.metadataquery umbenennen.</label>
+			<label index="update.renameXpathSortingToMetdataQuerySorting">Benenne Datenbankspalte tx_dlf_metadataformat.xpath_sorting in tx_dlf_metadataformat.metadataquery_sorting um...</label>
+			<label index="update.renameXpathSortingToMetdataQuerySortingOkay">...erfolgreich beendet - Spalte wurde umbenannt!</label>
+			<label index="update.renameXpathSortingToMetdataQuerySortingNotOkay">...fehlgeschlagen! Bitte in der Datenbank tx_dlf_metadataformat.xpath_sorting in tx_dlf_metadataformat.metadataquery_sorting umbenennen.</label>
 			
 		</languageKey>
 	</data>

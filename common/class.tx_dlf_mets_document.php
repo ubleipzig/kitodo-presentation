@@ -562,7 +562,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
 
             // Get the additional metadata from database.
             $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-                'tx_dlf_metadata.index_name AS index_name,tx_dlf_metadataformat.xpath AS xpath,tx_dlf_metadataformat.xpath_sorting AS xpath_sorting,tx_dlf_metadata.is_sortable AS is_sortable,tx_dlf_metadata.default_value AS default_value,tx_dlf_metadata.format AS format',
+                'tx_dlf_metadata.index_name AS index_name,tx_dlf_metadataformat.metadataquery AS metadataquery,tx_dlf_metadataformat.metadataquery_sorting AS metadataquery_sorting,tx_dlf_metadata.is_sortable AS is_sortable,tx_dlf_metadata.default_value AS default_value,tx_dlf_metadata.format AS format',
                 'tx_dlf_metadata,tx_dlf_metadataformat,tx_dlf_formats',
                 'tx_dlf_metadata.pid='.$cPid.' AND tx_dlf_metadataformat.pid='.$cPid.' AND ((tx_dlf_metadata.uid=tx_dlf_metadataformat.parent_id AND tx_dlf_metadataformat.encoded=tx_dlf_formats.uid AND tx_dlf_formats.type='.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->dmdSec[$dmdId]['type'], 'tx_dlf_formats').') OR tx_dlf_metadata.format=0)'.tx_dlf_helper::whereClause('tx_dlf_metadata', TRUE).tx_dlf_helper::whereClause('tx_dlf_metadataformat').tx_dlf_helper::whereClause('tx_dlf_formats'),
                 '',
@@ -581,7 +581,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
             while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
 
                 // Set metadata field's value(s).
-                if ($resArray['format'] > 0 && !empty($resArray['xpath']) && ($values = $domXPath->evaluate($resArray['xpath'], $domNode))) {
+                if ($resArray['format'] > 0 && !empty($resArray['metadataquery']) && ($values = $domXPath->evaluate($resArray['metadataquery'], $domNode))) {
 
                     if ($values instanceof DOMNodeList && $values->length > 0) {
 
@@ -614,7 +614,7 @@ final class tx_dlf_mets_document extends tx_dlf_document {
                 // Set sorting value if applicable.
                 if (!empty($metadata[$resArray['index_name']]) && $resArray['is_sortable']) {
 
-                    if ($resArray['format'] > 0 && !empty($resArray['xpath_sorting']) && ($values = $domXPath->evaluate($resArray['xpath_sorting'], $domNode))) {
+                    if ($resArray['format'] > 0 && !empty($resArray['metadataquery_sorting']) && ($values = $domXPath->evaluate($resArray['metadataquery_sorting'], $domNode))) {
 
                         if ($values instanceof DOMNodeList && $values->length > 0) {
 

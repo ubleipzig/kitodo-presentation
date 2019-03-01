@@ -105,7 +105,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
              *  TODO Saving / indexing should still work - check!
              */
             $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-                'tx_dlf_metadataformat.xpath AS querypath',
+                'tx_dlf_metadataformat.metadataquery AS querypath',
                 'tx_dlf_metadata,tx_dlf_metadataformat,tx_dlf_formats',
                 'tx_dlf_metadata.pid='.$pid.' AND tx_dlf_metadataformat.pid='.$pid.' AND ((tx_dlf_metadata.uid=tx_dlf_metadataformat.parent_id AND tx_dlf_metadataformat.encoded=tx_dlf_formats.uid'
                 .' AND tx_dlf_metadata.index_name="record_id" AND tx_dlf_formats.type='.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->getIiifVersion(), 'tx_dlf_formats').') OR tx_dlf_metadata.format=0)'
@@ -913,7 +913,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         $metadata['document_format'][] = 'IIIF';
         
         $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-            'tx_dlf_metadata.index_name AS index_name,tx_dlf_metadataformat.xpath AS xpath,tx_dlf_metadataformat.xpath_sorting AS xpath_sorting,tx_dlf_metadata.is_sortable AS is_sortable,tx_dlf_metadata.default_value AS default_value,tx_dlf_metadata.format AS format',
+            'tx_dlf_metadata.index_name AS index_name,tx_dlf_metadataformat.metadataquery AS metadataquery,tx_dlf_metadataformat.metadataquery_sorting AS metadataquery_sorting,tx_dlf_metadata.is_sortable AS is_sortable,tx_dlf_metadata.default_value AS default_value,tx_dlf_metadata.format AS format',
             'tx_dlf_metadata,tx_dlf_metadataformat,tx_dlf_formats',
             'tx_dlf_metadata.pid='.$cPid.' AND tx_dlf_metadataformat.pid='.$cPid.' AND ((tx_dlf_metadata.uid=tx_dlf_metadataformat.parent_id AND tx_dlf_metadataformat.encoded=tx_dlf_formats.uid AND tx_dlf_formats.type='.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->getIiifVersion(), 'tx_dlf_formats').') OR tx_dlf_metadata.format=0)'.tx_dlf_helper::whereClause('tx_dlf_metadata', TRUE).tx_dlf_helper::whereClause('tx_dlf_metadataformat').tx_dlf_helper::whereClause('tx_dlf_formats'),
             '',
@@ -926,7 +926,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         while ($resArray = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
             
             // Set metadata field's value(s).
-            if ($resArray['format'] > 0 && !empty($resArray['xpath']) && ($values = $iiifResource->jsonPath($resArray['xpath'])) != null) {
+            if ($resArray['format'] > 0 && !empty($resArray['metadataquery']) && ($values = $iiifResource->jsonPath($resArray['metadataquery'])) != null) {
                 
                 if (is_string($values)) {
                     
@@ -959,7 +959,7 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
             // Set sorting value if applicable.
             if (!empty($metadata[$resArray['index_name']]) && $resArray['is_sortable']) {
                 
-                if ($resArray['format'] > 0 && !empty($resArray['xpath_sorting']) && ($values = $iiifResource->jsonPath($resArray['xpath_sorting']) != null)) {
+                if ($resArray['format'] > 0 && !empty($resArray['metadataquery_sorting']) && ($values = $iiifResource->jsonPath($resArray['metadataquery_sorting']) != null)) {
                     
                     
                     if ($values instanceof string) {
