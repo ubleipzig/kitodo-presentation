@@ -136,12 +136,6 @@ final class tx_dlf_mets_document extends tx_dlf_document {
             $fileLocation = strrpos($fileLocation, "info.json") == strlen($fileLocation) - 9 ? $fileLocation :
                 strrpos($fileLocation, "/") == strlen($fileLocation) ? $fileLocation."info.json" : $fileLocation."/info.json";
             
-            if (!class_exists('\\iiif\\presentation\\IiifHelper', false)) {
-                
-                require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/iiif/include.php'));
-                
-            }
-            
             $conf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
             
             IiifHelper::setUrlReader(tx_dlf_iiif_urlreader::getInstance());

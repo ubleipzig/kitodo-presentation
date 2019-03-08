@@ -1201,12 +1201,6 @@ class tx_dlf_iiif_manifest extends tx_dlf_document
         
         $content = GeneralUtility::getUrl($location);
 
-        if (!class_exists('\\iiif\\tools\\IiifHelper', false)) {
-            
-            require_once(\TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:'.self::$extKey.'/lib/php-iiif-manifest-reader/Iiif/include.php'));
-            
-        }
-        
         $conf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][self::$extKey]);
         
         IiifHelper::setUrlReader(tx_dlf_iiif_urlreader::getInstance());
